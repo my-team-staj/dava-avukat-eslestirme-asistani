@@ -1,0 +1,14 @@
+# Visual Studio klasörleri ve geçici dosyalar
+.vs/
+*.user
+*.suo
+*.cache
+*.log
+
+# Derleme çıktıları
+bin/
+obj/
+
+# Environment dosyaları
+.env
+.env.*

@@ -1,0 +1,6 @@
+@dava_avukat_eslestirme_asistani_HostAddress = http://localhost:5173
+
+GET {{dava_avukat_eslestirme_asistani_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
