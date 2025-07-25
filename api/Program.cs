@@ -1,17 +1,26 @@
+using Microsoft.EntityFrameworkCore;
+using dava_avukat_eslestirme_asistani.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// DbContext tan?m? (EF Core ba?lant?s?)
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Controller ve servisleri ekle
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+
+// Swagger (API dokümantasyonu)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Geli?tirme ortam?ysa Swagger'? göster
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
