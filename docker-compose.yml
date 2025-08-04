@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql-db
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Lawyer-C3se
+      - MSSQL_PID=Developer
+      - MSSQL_DB=lexmatchgun
+      - DB_USER=sa
+      - DB_PASS=YourStrong!Passw0rd
+      - DB_NAME=lexmatchgun
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - app-network
+
+volumes:
+  mssql_data:
+
+networks:
+  app-network:
+    driver: bridge
