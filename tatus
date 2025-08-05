@@ -1,0 +1,53 @@
+[33mcommit 3ece410647776f03b5add38008ed71f5ae95547a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature[m[33m, [m[1;31morigin/feature[m[33m)[m
+Author: Faruk Serdar DEGIRMI <farukserdar.degirmi@gunhukuk.com.tr>
+Date:   Tue Aug 5 10:08:30 2025 +0300
+
+    launchSettings.json güncellendi: F5 ile Swagger otomatik açılıyor
+
+[33mcommit 487c97b31018a33b0bec48840065fc92e1267c1d[m
+Author: Faruk Serdar DEGIRMI <farukserdar.degirmi@gunhukuk.com.tr>
+Date:   Tue Aug 5 09:47:20 2025 +0300
+
+    Lawyer ekleme özelliği ve DTO ile generic repository uyumu
+
+[33mcommit d0c4ee1215af803d4c6376876e7236ea69a6276a[m
+Author: Berat Çalık <berat.calik@gunhukuk.com.tr>
+Date:   Mon Aug 4 16:24:09 2025 +0300
+
+    hata düzeltidi
+
+[33mcommit 24ea1bbd8669195c6fd16b5c32799724535ecb38[m
+Author: Berat Çalık <berat.calik@gunhukuk.com.tr>
+Date:   Mon Aug 4 16:11:25 2025 +0300
+
+    DataBase Olusturuldu ve Base Repositories eklendi
+
+[33mcommit e490ec79c1556dbe42336c8da556e2f9f7bce271[m
+Author: Faruk Serdar DEGIRMI <farukserdar.degirmi@gunhukuk.com.tr>
+Date:   Mon Aug 4 11:02:06 2025 +0300
+
+    MSSQL Docker Compose Dosyası Oluşturuldu bağlantılar yapıldı.
+
+[33mcommit 3329f0cf18495ba9561c8b7467df1515e4914ea6[m
+Author: Faruk Serdar DEGIRMI <farukserdar.degirmi@gunhukuk.com.tr>
+Date:   Mon Aug 4 10:58:40 2025 +0300
+
+    MSSQL Docker Compose Dosyası Oluşturuldu bağlantılar tanımlandı.
+
+[33mcommit d9c93a21a1e5491d386beb6adf900d0c0dfaf5a2[m
+Author: Berat Çalık <berat.calik@gunhukuk.com.tr>
+Date:   Fri Aug 1 17:19:31 2025 +0300
+
+    dosya yapısı temizlendi.
+
+[33mcommit 254ee7cd2a308a899c511d33902a0d6496e69c61[m
+Author: Berat Çalık <berat.calik@gunhukuk.com.tr>
+Date:   Fri Aug 1 17:06:23 2025 +0300
+
+    a
+
+[33mcommit 2024ec6947c73090cb8e02d8e5820fad311ecd8c[m
+Author: Faruk Serdar DEGIRMI <farukserdar.degirmi@gunhukuk.com.tr>
+Date:   Wed Jul 23 12:05:45 2025 +0300
+
+    Removed .vs folder from index and added .gitignore
