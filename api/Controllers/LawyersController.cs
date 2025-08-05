@@ -34,7 +34,8 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             var created = await _lawyerService.AddLawyerAsync(lawyerDto);
             var dto = _mapper.Map<LawyerDto>(created);
 
-            return CreatedAtAction(nameof(GetLawyerById), new { id = dto.Id }, dto);
+            // SADECE ID DÖNÜLÜYOR
+            return CreatedAtAction(nameof(GetLawyerById), new { id = dto.Id }, new { id = dto.Id });
         }
 
         [HttpGet("{id}")]
@@ -47,6 +48,6 @@ namespace dava_avukat_eslestirme_asistani.Controllers
                 return NotFound();
             }
             return Ok(lawyer);
-        } 
+        }
     }
 }
