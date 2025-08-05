@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace dava_avukat_eslestirme_asistani.Repositories
 {
@@ -23,6 +24,15 @@ namespace dava_avukat_eslestirme_asistani.Repositories
 
         public void Delete(T entity) => _dbSet.Remove(entity);
 
-        public async Task SaveAsync() => await _context.SaveChangesAsync();
+        public async Task SaveAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+
+
+
+        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+           => await _dbSet.Where(predicate).ToListAsync();
+
     }
 }
