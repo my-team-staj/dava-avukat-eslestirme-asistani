@@ -1,4 +1,4 @@
-using dava_avukat_eslestirme_asistani.Mapping;
+using dava_avukat_eslestirme_asistani;
 using dava_avukat_eslestirme_asistani.Middlewares;
 using dava_avukat_eslestirme_asistani.Repositories;
 using dava_avukat_eslestirme_asistani.Services;
@@ -12,6 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<ICaseService, CaseService>();
+builder.Services.AddScoped<ILawyerService, LawyerService>();
+
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
