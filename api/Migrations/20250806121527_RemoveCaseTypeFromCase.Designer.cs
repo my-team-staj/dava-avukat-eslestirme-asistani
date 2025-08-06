@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace dava_avukat_eslestirme_asistani.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250806121527_RemoveCaseTypeFromCase")]
+    partial class RemoveCaseTypeFromCase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -123,6 +126,10 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                     b.Property<double>("Rating")
                         .HasColumnType("float");
 
+                    b.Property<string>("Specialization")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("TotalCasesHandled")
                         .HasColumnType("int");
 
@@ -150,6 +157,7 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                             Name = "Av. Berat",
                             Phone = "05367750225",
                             Rating = 4.7999999999999998,
+                            Specialization = "Ceza",
                             TotalCasesHandled = 80,
                             WorkingGroupId = 1
                         });
@@ -185,48 +193,6 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                             CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             GroupDescription = "Ceza davaları için uzman ekip",
                             GroupName = "Ceza Grubu"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Boşanma, velayet ve nafaka gibi konularda uzmanlık",
-                            GroupName = "Aile Hukuku Grubu"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Şirketler ve ticari uyuşmazlıklar",
-                            GroupName = "Ticaret Hukuku Grubu"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "İşçi-işveren ilişkileri, tazminat davaları",
-                            GroupName = "İş Hukuku Grubu"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Tapu, kat mülkiyeti ve kira sözleşmeleri",
-                            GroupName = "Gayrimenkul ve Kira Grubu"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Tüketici uyuşmazlıkları, ayıplı mal davaları",
-                            GroupName = "Tüketici Hakları Grubu"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Borç tahsilatı, icra ve konkordato işlemleri",
-                            GroupName = "İcra ve İflas Grubu"
                         });
                 });
 

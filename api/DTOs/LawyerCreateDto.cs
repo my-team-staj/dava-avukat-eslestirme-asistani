@@ -6,8 +6,6 @@ namespace dava_avukat_eslestirme_asistani.DTOs
     {
         [Required]
         public string Name { get; set; }
-        [Required]
-        public string Specialization { get; set; }
         public int ExperienceYears { get; set; }
         [Required]
         public string City { get; set; }

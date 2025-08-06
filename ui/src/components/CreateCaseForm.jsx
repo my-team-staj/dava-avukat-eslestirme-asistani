@@ -1,21 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "../App.css";
 
 function CreateCaseForm() {
   const [form, setForm] = useState({
     title: "",
-    caseType: "",
     description: "",
-    filedDate: new Date().toISOString().substring(0, 10), // yyyy-mm-dd
+    filedDate: new Date().toISOString().substring(0, 10),
     city: "",
     language: "Türkçe",
     urgencyLevel: "Normal",
     requiresProBono: false,
     estimatedDurationInDays: 0,
     requiredExperienceLevel: "Orta",
-    isActive: true,
     workingGroupId: ""
   });
+
+  const [workingGroups, setWorkingGroups] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("https://localhost:60227/api/workinggroups")
+      .then((res) => setWorkingGroups(res.data))
+      .catch((err) =>
+        console.error("Çalışma grupları alınırken hata oluştu", err)
+      );
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -25,25 +35,32 @@ function CreateCaseForm() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // API isteğini burada yazabilirsin
-    alert("Dava başarıyla oluşturuldu!");
-    // Burada POST işlemini ekle
-    setForm({
-      title: "",
-      caseType: "",
-      description: "",
-      filedDate: new Date().toISOString().substring(0, 10),
-      city: "",
-      language: "Türkçe",
-      urgencyLevel: "Normal",
-      requiresProBono: false,
-      estimatedDurationInDays: 0,
-      requiredExperienceLevel: "Orta",
-      isActive: true,
-      workingGroupId: ""
-    });
+
+    try {
+      const response = await axios.post(
+        "https://localhost:60227/api/cases",
+        form
+      );
+      alert(`✅ Dava başarıyla oluşturuldu. ID: ${response.data.id}`);
+      setForm({
+        title: "",
+        caseType: "",
+        description: "",
+        filedDate: new Date().toISOString().substring(0, 10),
+        city: "",
+        language: "Türkçe",
+        urgencyLevel: "Normal",
+        requiresProBono: false,
+        estimatedDurationInDays: 0,
+        requiredExperienceLevel: "Orta",
+        workingGroupId: ""
+      });
+    } catch (error) {
+      console.error(error);
+      alert("❌ Kayıt sırasında bir hata oluştu.");
+    }
   };
 
   return (
@@ -64,19 +81,7 @@ function CreateCaseForm() {
         />
       </div>
 
-      <div className="lex-form-row">
-        <label htmlFor="caseType">Dava Türü*</label>
-        <input
-          type="text"
-          className="lex-form-input"
-          id="caseType"
-          name="caseType"
-          placeholder="Örn: Aile Hukuku"
-          value={form.caseType}
-          onChange={handleChange}
-          required
-        />
-      </div>
+      
 
       <div className="lex-form-row">
         <label htmlFor="description">Açıklama</label>
@@ -92,7 +97,7 @@ function CreateCaseForm() {
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="filedDate">Başvuru Tarihi</label>
+        <label htmlFor="filedDate">Dava Tarihi*</label>
         <input
           type="date"
           className="lex-form-input"
@@ -100,6 +105,7 @@ function CreateCaseForm() {
           name="filedDate"
           value={form.filedDate}
           onChange={handleChange}
+          required
         />
       </div>
 
@@ -145,8 +151,6 @@ function CreateCaseForm() {
         </select>
       </div>
 
-      
-
       <div className="lex-form-row">
         <label htmlFor="estimatedDurationInDays">Tahmini Süre (gün)</label>
         <input
@@ -157,7 +161,9 @@ function CreateCaseForm() {
           placeholder="Örn: 30"
           value={form.estimatedDurationInDays}
           onChange={handleChange}
-          min="0"
+          min="1"
+          max="365"
+          required
         />
       </div>
 
@@ -176,21 +182,24 @@ function CreateCaseForm() {
         </select>
       </div>
 
-      
-
       <div className="lex-form-row">
-        <label htmlFor="workingGroupId">Çalışma Grubu ID</label>
-        <input
-          type="number"
+        <label htmlFor="workingGroupId">Çalışma Grubu</label>
+        <select
           className="lex-form-input"
           id="workingGroupId"
           name="workingGroupId"
-          placeholder="Varsa"
           value={form.workingGroupId}
           onChange={handleChange}
-          min="0"
-        />
+        >
+          <option value="">-- Çalışma Grubu Seçin --</option>
+          {workingGroups.map((group) => (
+            <option key={group.id} value={group.id}>
+              {group.groupName}
+            </option>
+          ))}
+        </select>
       </div>
+
       <div className="lex-form-row">
         <input
           type="checkbox"
