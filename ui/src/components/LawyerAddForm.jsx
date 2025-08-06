@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "../App.css";
 
 function LawyerAddForm() {
   const [form, setForm] = useState({
     name: "",
-    specialization: "",
     experienceYears: 0,
     city: "",
     email: "",
@@ -12,12 +12,21 @@ function LawyerAddForm() {
     baroNumber: "",
     languagesSpoken: "",
     availableForProBono: false,
-    rating: 0, // Genellikle kullanıcıdan alınmaz, istersek readonly veya default bırakırız
+    rating: 0,
     totalCasesHandled: 0,
     education: "",
     isActive: true,
     workingGroupId: ""
   });
+
+  const [workingGroups, setWorkingGroups] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("https://localhost:60227/api/workinggroups")
+      .then((res) => setWorkingGroups(res.data))
+      .catch((err) => console.error("Çalışma grupları alınamadı", err));
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -27,31 +36,37 @@ function LawyerAddForm() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // API isteği burada
-    alert("Avukat başarıyla eklendi!");
-    setForm({
-      name: "",
-      specialization: "",
-      experienceYears: 0,
-      city: "",
-      email: "",
-      phone: "",
-      baroNumber: "",
-      languagesSpoken: "",
-      availableForProBono: false,
-      rating: 0,
-      totalCasesHandled: 0,
-      education: "",
-      isActive: true,
-      workingGroupId: ""
-    });
+
+    try {
+      await axios.post("https://localhost:60227/api/lawyers", form);
+      alert("✅ Avukat başarıyla eklendi!");
+      setForm({
+        name: "",
+        experienceYears: 0,
+        city: "",
+        email: "",
+        phone: "",
+        baroNumber: "",
+        languagesSpoken: "",
+        availableForProBono: false,
+        rating: 0,
+        totalCasesHandled: 0,
+        education: "",
+        isActive: true,
+        workingGroupId: ""
+      });
+    } catch (err) {
+      console.error(err);
+      alert("❌ Hata oluştu.");
+    }
   };
 
   return (
     <form className="lex-form" onSubmit={handleSubmit}>
       <h2>Avukat Ekle</h2>
+
       <div className="lex-form-row">
         <label htmlFor="name">İsim Soyisim*</label>
         <input
@@ -65,19 +80,7 @@ function LawyerAddForm() {
           required
         />
       </div>
-      <div className="lex-form-row">
-        <label htmlFor="specialization">Uzmanlık Alanı*</label>
-        <input
-          type="text"
-          className="lex-form-input"
-          id="specialization"
-          name="specialization"
-          placeholder="Örn: Ceza Hukuku"
-          value={form.specialization}
-          onChange={handleChange}
-          required
-        />
-      </div>
+
       <div className="lex-form-row">
         <label htmlFor="experienceYears">Deneyim Yılı</label>
         <input
@@ -91,6 +94,7 @@ function LawyerAddForm() {
           min="0"
         />
       </div>
+
       <div className="lex-form-row">
         <label htmlFor="city">Şehir*</label>
         <input
@@ -104,6 +108,7 @@ function LawyerAddForm() {
           required
         />
       </div>
+
       <div className="lex-form-row">
         <label htmlFor="email">E-Posta</label>
         <input
@@ -116,6 +121,7 @@ function LawyerAddForm() {
           onChange={handleChange}
         />
       </div>
+
       <div className="lex-form-row">
         <label htmlFor="phone">Telefon</label>
         <input
@@ -128,6 +134,7 @@ function LawyerAddForm() {
           onChange={handleChange}
         />
       </div>
+
       <div className="lex-form-row">
         <label htmlFor="baroNumber">Baro No</label>
         <input
@@ -140,6 +147,7 @@ function LawyerAddForm() {
           onChange={handleChange}
         />
       </div>
+
       <div className="lex-form-row">
         <label htmlFor="languagesSpoken">Konuşulan Diller</label>
         <input
@@ -152,7 +160,7 @@ function LawyerAddForm() {
           onChange={handleChange}
         />
       </div>
-     
+
       <div className="lex-form-row">
         <label htmlFor="rating">Puan (0-5)</label>
         <input
@@ -167,6 +175,7 @@ function LawyerAddForm() {
           step="0.1"
         />
       </div>
+
       <div className="lex-form-row">
         <label htmlFor="totalCasesHandled">Toplam Dava</label>
         <input
@@ -180,6 +189,7 @@ function LawyerAddForm() {
           min="0"
         />
       </div>
+
       <div className="lex-form-row">
         <label htmlFor="education">Eğitim</label>
         <input
@@ -192,21 +202,26 @@ function LawyerAddForm() {
           onChange={handleChange}
         />
       </div>
-     
+
       <div className="lex-form-row">
-        <label htmlFor="workingGroupId">Çalışma Grubu ID</label>
-        <input
-          type="number"
+        <label htmlFor="workingGroupId">Çalışma Grubu</label>
+        <select
           className="lex-form-input"
           id="workingGroupId"
           name="workingGroupId"
-          placeholder="Varsa"
           value={form.workingGroupId}
           onChange={handleChange}
-          min="0"
-        />
+        >
+          <option value="">-- Çalışma Grubu Seçin --</option>
+          {workingGroups.map((group) => (
+            <option key={group.id} value={group.id}>
+              {group.groupName}
+            </option>
+          ))}
+        </select>
       </div>
-       <div className="lex-form-row">
+
+      <div className="lex-form-row">
         <input
           type="checkbox"
           id="availableForProBono"
@@ -218,6 +233,7 @@ function LawyerAddForm() {
           Pro Bono Hizmet Verebilir
         </label>
       </div>
+
       <div className="lex-form-actions">
         <button type="submit" className="lex-form-btn">
           Ekle

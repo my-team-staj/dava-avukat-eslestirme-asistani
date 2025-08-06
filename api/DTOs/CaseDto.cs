@@ -4,7 +4,6 @@
     {
         public int Id { get; set; }
         public string Title { get; set; }
-        public string CaseType { get; set; }
         public string Description { get; set; }
         public string City { get; set; }
         public string Language { get; set; }

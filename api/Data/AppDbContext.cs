@@ -17,14 +17,57 @@ public class AppDbContext : DbContext
 
         // WorkingGroup seed
         modelBuilder.Entity<WorkingGroup>().HasData(
-            new WorkingGroup
-            {
-                Id = 1,
-                GroupName = "Ceza Grubu",
-                GroupDescription = "Ceza davaları için uzman ekip",
-                CreatedAt = new DateTime(2025, 8, 4)
-            }
-        );
+    new WorkingGroup
+    {
+        Id = 1,
+        GroupName = "Ceza Grubu",
+        GroupDescription = "Ceza davaları için uzman ekip",
+        CreatedAt = new DateTime(2025, 8, 4)
+    },
+    new WorkingGroup
+    {
+        Id = 2,
+        GroupName = "Aile Hukuku Grubu",
+        GroupDescription = "Boşanma, velayet ve nafaka gibi konularda uzmanlık",
+        CreatedAt = new DateTime(2025, 8, 4)
+    },
+    new WorkingGroup
+    {
+        Id = 3,
+        GroupName = "Ticaret Hukuku Grubu",
+        GroupDescription = "Şirketler ve ticari uyuşmazlıklar",
+        CreatedAt = new DateTime(2025, 8, 4)
+    },
+    new WorkingGroup
+    {
+        Id = 4,
+        GroupName = "İş Hukuku Grubu",
+        GroupDescription = "İşçi-işveren ilişkileri, tazminat davaları",
+        CreatedAt = new DateTime(2025, 8, 4)
+    },
+    new WorkingGroup
+    {
+        Id = 5,
+        GroupName = "Gayrimenkul ve Kira Grubu",
+        GroupDescription = "Tapu, kat mülkiyeti ve kira sözleşmeleri",
+        CreatedAt = new DateTime(2025, 8, 4)
+    },
+    new WorkingGroup
+    {
+        Id = 6,
+        GroupName = "Tüketici Hakları Grubu",
+        GroupDescription = "Tüketici uyuşmazlıkları, ayıplı mal davaları",
+        CreatedAt = new DateTime(2025, 8, 4)
+    },
+    new WorkingGroup
+    {
+        Id = 7,
+        GroupName = "İcra ve İflas Grubu",
+        GroupDescription = "Borç tahsilatı, icra ve konkordato işlemleri",
+        CreatedAt = new DateTime(2025, 8, 4)
+    }
+);
+
 
         // Lawyer seed
         modelBuilder.Entity<Lawyer>().HasData(
@@ -32,7 +75,6 @@ public class AppDbContext : DbContext
             {
                 Id = 1,
                 Name = "Av. Berat",
-                Specialization = "Ceza",
                 ExperienceYears = 5,
                 City = "Ankara",
                 Email = "berat.calik@gun.av.tr",

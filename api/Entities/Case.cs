@@ -1,4 +1,6 @@
-﻿namespace dava_avukat_eslestirme_asistani.Entities
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace dava_avukat_eslestirme_asistani.Entities
 {
     public class Case
     {
@@ -6,11 +8,11 @@
 
         public string Title { get; set; } = string.Empty;
 
-        public string CaseType { get; set; } = string.Empty;
-
         public string Description { get; set; } = string.Empty;
 
-        public DateTime FiledDate { get; set; } = DateTime.UtcNow;
+        [Required]
+        public DateTime FiledDate { get; set; }
+
 
         public string City { get; set; } = string.Empty;
 

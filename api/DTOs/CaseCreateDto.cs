@@ -8,11 +8,12 @@ namespace dava_avukat_eslestirme_asistani.DTOs
         [StringLength(100, ErrorMessage = "Başlık en fazla 100 karakter olabilir.")]
         public string Title { get; set; }
 
-        [Required(ErrorMessage = "Dava türü zorunludur.")]
-        public string CaseType { get; set; }
-
         [Required(ErrorMessage = "Açıklama zorunludur.")]
         public string Description { get; set; }
+        
+        [Required(ErrorMessage = "Dava tarihi zorunludur.")]
+        public DateTime FiledDate { get; set; }
+
 
         [Required(ErrorMessage = "Şehir bilgisi zorunludur.")]
         public string City { get; set; }
