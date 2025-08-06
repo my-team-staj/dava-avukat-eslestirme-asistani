@@ -1,6 +1,7 @@
 {
   "name": "ui",
   "version": "0.1.0",
+
   "proxy": "https://localhost:60227",
 
   "private": true,
