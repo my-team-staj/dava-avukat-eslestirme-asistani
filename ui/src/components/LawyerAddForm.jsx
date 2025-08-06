@@ -152,7 +152,18 @@ function LawyerAddForm() {
           onChange={handleChange}
         />
       </div>
-     
+      <div className="lex-form-row">
+        <input
+          type="checkbox"
+          id="availableForProBono"
+          name="availableForProBono"
+          checked={form.availableForProBono}
+          onChange={handleChange}
+        />
+        <label htmlFor="availableForProBono" style={{ marginLeft: 8, fontWeight: 500 }}>
+          Pro Bono Hizmet Verebilir
+        </label>
+      </div>
       <div className="lex-form-row">
         <label htmlFor="rating">Puan (0-5)</label>
         <input
@@ -192,7 +203,18 @@ function LawyerAddForm() {
           onChange={handleChange}
         />
       </div>
-      
+      <div className="lex-form-row">
+        <input
+          type="checkbox"
+          id="isActive"
+          name="isActive"
+          checked={form.isActive}
+          onChange={handleChange}
+        />
+        <label htmlFor="isActive" style={{ marginLeft: 8, fontWeight: 500 }}>
+          Avukat Aktif Mi?
+        </label>
+      </div>
       <div className="lex-form-row">
         <label htmlFor="workingGroupId">Çalışma Grubu ID</label>
         <input
@@ -205,18 +227,6 @@ function LawyerAddForm() {
           onChange={handleChange}
           min="0"
         />
-      </div>
-       <div className="lex-form-row">
-        <input
-          type="checkbox"
-          id="availableForProBono"
-          name="availableForProBono"
-          checked={form.availableForProBono}
-          onChange={handleChange}
-        />
-        <label htmlFor="availableForProBono" style={{ marginLeft: 8, fontWeight: 500 }}>
-          Pro Bono Hizmet Verebilir
-        </label>
       </div>
       <div className="lex-form-actions">
         <button type="submit" className="lex-form-btn">

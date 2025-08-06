@@ -1,38 +1,296 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+/* Genel tema ve gövde */
+.app-bg {
   min-height: 100vh;
+  background: linear-gradient(120deg, #f7f9fb 0%, #e9eef9 100%);
+  font-family: 'Inter', 'Segoe UI', 'Roboto', Arial, sans-serif;
+  color: #263043;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* NAVBAR */
+.navbar-new {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #202e45;
+  color: #fff;
+  padding: 1.2rem 5vw;
+  box-shadow: 0 4px 20px rgba(32,46,69,0.10);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+
+.navbar-logo-new {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.navbar-logo-img-new {
+  height: 48px;
+  margin-right: 15px;
+}
+
+.navbar-logo-new span {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+.navbar-links-new {
+  display: flex;
+  gap: 2.1rem;
+}
+
+.navbar-links-new a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 1.08rem;
+  border-radius: 8px;
+  padding: 9px 24px;
+  transition: background 0.16s, color 0.14s;
+}
+.navbar-links-new a.active,
+.navbar-links-new a:hover {
+  background: #41bffc26;
+  color: #a4c3fa;
+}
+
+/* HERO ALANI */
+.home-hero-bg {
   display: flex;
   flex-direction: column;
   align-items: center;
+  background: none;
+}
+
+.hero-main {
+  text-align: center;
+  margin: 2.6rem auto 1.6rem auto;
+  background: #fff;
+  padding: 2.4rem 2rem 2rem 2rem;
+  border-radius: 28px;
+  box-shadow: 0 2px 24px rgba(62, 106, 191, 0.09);
+  max-width: 520px;
+}
+
+.hero-logo {
+  height: 88px;
+  margin-bottom: 1.1rem;
+}
+
+.hero-main h1 {
+  font-size: 2.1rem;
+  font-weight: 900;
+  margin: 0.2rem 0 0.9rem 0;
+  letter-spacing: 1px;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #41bffc 20%, #a387ff 80%);
+  background-clip: text;               /* Modern */
+  -webkit-background-clip: text;       /* Safari/Chrome */
+  -webkit-text-fill-color: transparent; /* Safari/Chrome */
+  color: transparent;                   /* Yedek */
+}
+
+.hero-main p {
+  font-size: 1.18rem;
+  color: #4a5576;
+  margin: 0 auto 0.6rem auto;
+  line-height: 1.52;
+}
+
+.hero-btns {
+  display: flex;
+  gap: 1.3rem;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  margin: 2rem 0 0 0;
 }
 
-.App-link {
-  color: #61dafb;
+.primary-btn, .secondary-btn {
+  font-size: 1.09rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  padding: 0.95rem 2.1rem;
+  box-shadow: 0 2px 12px rgba(32,46,69,0.09);
+  cursor: pointer;
+  transition: background 0.17s, color 0.14s;
+  display: flex;
+  align-items: center;
+}
+.primary-btn {
+  background: linear-gradient(90deg, #204273 70%, #41bffc 130%);
+  color: #fff;
+}
+.primary-btn:hover {
+  background: #41bffc;
+  color: #204273;
+}
+.secondary-btn {
+  background: #e6eaf7;
+  color: #204273;
+}
+.secondary-btn:hover {
+  background: #204273;
+  color: #fff;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* KART PANEL */
+.cards-panel {
+  display: flex;
+  gap: 1.7rem;
+  justify-content: center;
+  margin: 2.6rem auto 2.3rem auto;
+  flex-wrap: wrap;
+}
+.feature-card {
+  background: #fff;
+  border-radius: 19px;
+  box-shadow: 0 2px 14px rgba(62, 106, 191, 0.08);
+  padding: 1.4rem 1.7rem 1.1rem 1.7rem;
+  width: 235px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.feature-icon {
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+  color: #41bffc;
+}
+
+.feature-card h3 {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #204273;
+  margin-bottom: 0.6rem;
+}
+.feature-card p {
+  font-size: 0.97rem;
+  color: #425274;
+}
+
+/* Footer */
+.footer {
+  margin-top: auto;
+  padding: 1.3rem 0 1.1rem 0;
+  text-align: center;
+  background: #e2e6ea;
+  color: #263043;
+  font-size: 1.06rem;
+  border-radius: 32px 32px 0 0;
+  opacity: 0.97;
+}
+
+.footer-contact {
+  margin-top: 6px;
+  font-size: 0.97rem;
+}
+.footer-contact a {
+  color: #204273;
+  text-decoration: underline;
+  font-weight: 500;
+  margin: 0 2px;
+}
+
+/* FORMLAR (Dava ve Avukat Ekle) */
+.lex-form {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+}
+
+.lex-form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.15rem;
+  gap: 0.5rem;
+}
+
+.lex-form-row label {
+  min-width: 135px;
+  font-size: 1.06rem;
+  font-weight: 500;
+}
+
+.lex-form-input,
+.lex-form-select,
+.lex-form-row textarea {
+  flex: 1 1 0;
+  padding: 9px 12px;
+  border-radius: 7px;
+  border: 1px solid #c3cad9;
+  font-size: 1.07rem;
+  background: #f8fafc;
+  transition: border-color 0.2s;
+  resize: none;
+}
+
+.lex-form-input:focus,
+.lex-form-select:focus,
+.lex-form-row textarea:focus {
+  border-color: #4961ba;
+  outline: none;
+}
+
+.lex-form-actions {
+  margin-top: 1.3rem;
+  text-align: right;
+}
+
+.lex-form-btn {
+  padding: 9px 32px;
+  background: #204273;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.08rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lex-form-btn:hover {
+  background: #263043;
+}
+
+/* Responsive düzeltmeler */
+@media (max-width: 900px) {
+  .cards-panel {
+    flex-direction: column;
+    gap: 1.2rem;
+    align-items: center;
   }
-  to {
-    transform: rotate(360deg);
+  .navbar-new {
+    flex-direction: column;
+    gap: 1.1rem;
+    padding: 1.1rem 2vw;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-main {
+    padding: 1.1rem 0.5rem 1.2rem 0.5rem;
+    max-width: 98vw;
+  }
+  .cards-panel {
+    margin: 1.3rem auto 1.1rem auto;
+  }
+  .navbar-logo-new span {
+    font-size: 1.3rem;
   }
 }

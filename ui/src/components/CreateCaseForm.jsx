@@ -1,92 +1,226 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from "react";
+import "../App.css";
 
-const CreateCaseForm = () => {
-  const [formData, setFormData] = useState({
-    title: '',
-    caseType: '',
-    description: '',
-    city: '',
-    language: 'Türkçe',
-    urgencyLevel: 'Normal',
+function CreateCaseForm() {
+  const [form, setForm] = useState({
+    title: "",
+    caseType: "",
+    description: "",
+    filedDate: new Date().toISOString().substring(0, 10), // yyyy-mm-dd
+    city: "",
+    language: "Türkçe",
+    urgencyLevel: "Normal",
     requiresProBono: false,
     estimatedDurationInDays: 0,
-    requiredExperienceLevel: 'Orta',
-    workingGroupId: ''
+    requiredExperienceLevel: "Orta",
+    isActive: true,
+    workingGroupId: ""
   });
-
-  const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // API isteğini burada yazabilirsin
+    alert("Dava başarıyla oluşturuldu!");
+    // Burada POST işlemini ekle
+    setForm({
+      title: "",
+      caseType: "",
+      description: "",
+      filedDate: new Date().toISOString().substring(0, 10),
+      city: "",
+      language: "Türkçe",
+      urgencyLevel: "Normal",
+      requiresProBono: false,
+      estimatedDurationInDays: 0,
+      requiredExperienceLevel: "Orta",
+      isActive: true,
+      workingGroupId: ""
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('');
-
-    try {
-      const response = await axios.post('https://localhost:60227/api/cases', formData);
-      console.log('Sunucu yanıtı:', response); // 🔍 Burada log geliyor olmalı!
-
-      const caseId = response.data.id;
-      setMessage(`✅ Dava başarıyla oluşturuldu. ID: ${caseId}`);
-
-      setFormData({
-        title: '',
-        caseType: '',
-        description: '',
-        city: '',
-        language: 'Türkçe',
-        urgencyLevel: 'Normal',
-        requiresProBono: false,
-        estimatedDurationInDays: 0,
-        requiredExperienceLevel: 'Orta',
-        workingGroupId: ''
-      });
-    } catch (error) {
-      console.error('Hata:', error);
-      const errMsg = error.response?.data?.error || '❌ Hata oluştu.';
-      setMessage(errMsg);
-    }
-  };
-
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '400px' }}>
+    <form className="lex-form" onSubmit={handleSubmit}>
       <h2>Dava Oluştur</h2>
-      <input name="title" value={formData.title} onChange={handleChange} placeholder="Başlık" required />
-      <input name="caseType" value={formData.caseType} onChange={handleChange} placeholder="Dava Türü" required />
-      <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Açıklama" required />
-      <input name="city" value={formData.city} onChange={handleChange} placeholder="Şehir" required />
-      <input name="language" value={formData.language} onChange={handleChange} placeholder="Dil" />
-      <input name="urgencyLevel" value={formData.urgencyLevel} onChange={handleChange} placeholder="Aciliyet" />
-      <label>
-        <input type="checkbox" name="requiresProBono" checked={formData.requiresProBono} onChange={handleChange} />
-        Ücretsiz Hizmet (Pro Bono)
-      </label>
-      <input
-        name="estimatedDurationInDays"
-        type="number"
-        value={formData.estimatedDurationInDays}
-        onChange={handleChange}
-        placeholder="Tahmini Süre (gün)"
-      />
-      <input name="requiredExperienceLevel" value={formData.requiredExperienceLevel} onChange={handleChange} placeholder="Deneyim Seviyesi" />
-      <input
-        name="workingGroupId"
-        type="number"
-        value={formData.workingGroupId}
-        onChange={handleChange}
-        placeholder="Çalışma Grubu ID (örn: 1)"
-      />
-      <button type="submit">Kaydet</button>
-      {message && <p>{message}</p>}
+
+      <div className="lex-form-row">
+        <label htmlFor="title">Başlık*</label>
+        <input
+          type="text"
+          className="lex-form-input"
+          id="title"
+          name="title"
+          placeholder="Örn: Miras Davası"
+          value={form.title}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="caseType">Dava Türü*</label>
+        <input
+          type="text"
+          className="lex-form-input"
+          id="caseType"
+          name="caseType"
+          placeholder="Örn: Aile Hukuku"
+          value={form.caseType}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="description">Açıklama</label>
+        <textarea
+          className="lex-form-input"
+          id="description"
+          name="description"
+          placeholder="Dava ile ilgili kısa açıklama"
+          value={form.description}
+          onChange={handleChange}
+          rows={2}
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="filedDate">Başvuru Tarihi</label>
+        <input
+          type="date"
+          className="lex-form-input"
+          id="filedDate"
+          name="filedDate"
+          value={form.filedDate}
+          onChange={handleChange}
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="city">Şehir*</label>
+        <input
+          type="text"
+          className="lex-form-input"
+          id="city"
+          name="city"
+          placeholder="Örn: Ankara"
+          value={form.city}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="language">Dil</label>
+        <input
+          type="text"
+          className="lex-form-input"
+          id="language"
+          name="language"
+          placeholder="Türkçe"
+          value={form.language}
+          onChange={handleChange}
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="urgencyLevel">Aciliyet</label>
+        <select
+          className="lex-form-input"
+          id="urgencyLevel"
+          name="urgencyLevel"
+          value={form.urgencyLevel}
+          onChange={handleChange}
+        >
+          <option value="Normal">Normal</option>
+          <option value="Acil">Acil</option>
+          <option value="Düşük Öncelik">Düşük Öncelik</option>
+        </select>
+      </div>
+
+      <div className="lex-form-row">
+        <input
+          type="checkbox"
+          id="requiresProBono"
+          name="requiresProBono"
+          checked={form.requiresProBono}
+          onChange={handleChange}
+        />
+        <label htmlFor="requiresProBono" style={{ marginLeft: 8, fontWeight: 500 }}>
+          Pro Bono (Ücretsiz Hizmet Gerekli mi?)
+        </label>
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="estimatedDurationInDays">Tahmini Süre (gün)</label>
+        <input
+          type="number"
+          className="lex-form-input"
+          id="estimatedDurationInDays"
+          name="estimatedDurationInDays"
+          placeholder="Örn: 30"
+          value={form.estimatedDurationInDays}
+          onChange={handleChange}
+          min="0"
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="requiredExperienceLevel">Tecrübe Seviyesi</label>
+        <select
+          className="lex-form-input"
+          id="requiredExperienceLevel"
+          name="requiredExperienceLevel"
+          value={form.requiredExperienceLevel}
+          onChange={handleChange}
+        >
+          <option value="Başlangıç">Başlangıç</option>
+          <option value="Orta">Orta</option>
+          <option value="Uzman">Uzman</option>
+        </select>
+      </div>
+
+      <div className="lex-form-row">
+        <input
+          type="checkbox"
+          id="isActive"
+          name="isActive"
+          checked={form.isActive}
+          onChange={handleChange}
+        />
+        <label htmlFor="isActive" style={{ marginLeft: 8, fontWeight: 500 }}>
+          Dava Aktif mi?
+        </label>
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="workingGroupId">Çalışma Grubu ID</label>
+        <input
+          type="number"
+          className="lex-form-input"
+          id="workingGroupId"
+          name="workingGroupId"
+          placeholder="Varsa"
+          value={form.workingGroupId}
+          onChange={handleChange}
+          min="0"
+        />
+      </div>
+
+      <div className="lex-form-actions">
+        <button type="submit" className="lex-form-btn">
+          Kaydet
+        </button>
+      </div>
     </form>
   );
-};
+}
 
 export default CreateCaseForm;

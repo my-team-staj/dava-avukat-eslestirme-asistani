@@ -1,13 +1,29 @@
 import React from "react";
-import LawyerAddForm from "./LawyerAddForm";
-import CreateCaseForm from './components/CreateCaseForm';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import Home from "./components/Home";
+import LawyerAddForm from "./components/LawyerAddForm";
+import CreateCaseForm from "./components/CreateCaseForm";
+
+import "./App.css";
 
 function App() {
   return (
-    <div style={{ padding: '2rem' }}>
-      <LawyerAddForm />
-      <CreateCaseForm />
-    </div>
+    <Router>
+      <div className="app-bg">
+        <Navbar />
+        <main className="app-main">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/lawyer-add" element={<LawyerAddForm />} />
+            <Route path="/case-add" element={<CreateCaseForm />} />
+            {/* İstersen ekstra route burada ekleyebilirsin */}
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </Router>
   );
 }
 
