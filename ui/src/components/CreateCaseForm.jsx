@@ -145,18 +145,7 @@ function CreateCaseForm() {
         </select>
       </div>
 
-      <div className="lex-form-row">
-        <input
-          type="checkbox"
-          id="requiresProBono"
-          name="requiresProBono"
-          checked={form.requiresProBono}
-          onChange={handleChange}
-        />
-        <label htmlFor="requiresProBono" style={{ marginLeft: 8, fontWeight: 500 }}>
-          Pro Bono (Ücretsiz Hizmet Gerekli mi?)
-        </label>
-      </div>
+      
 
       <div className="lex-form-row">
         <label htmlFor="estimatedDurationInDays">Tahmini Süre (gün)</label>
@@ -187,18 +176,7 @@ function CreateCaseForm() {
         </select>
       </div>
 
-      <div className="lex-form-row">
-        <input
-          type="checkbox"
-          id="isActive"
-          name="isActive"
-          checked={form.isActive}
-          onChange={handleChange}
-        />
-        <label htmlFor="isActive" style={{ marginLeft: 8, fontWeight: 500 }}>
-          Dava Aktif mi?
-        </label>
-      </div>
+      
 
       <div className="lex-form-row">
         <label htmlFor="workingGroupId">Çalışma Grubu ID</label>
@@ -212,6 +190,18 @@ function CreateCaseForm() {
           onChange={handleChange}
           min="0"
         />
+      </div>
+      <div className="lex-form-row">
+        <input
+          type="checkbox"
+          id="requiresProBono"
+          name="requiresProBono"
+          checked={form.requiresProBono}
+          onChange={handleChange}
+        />
+        <label htmlFor="requiresProBono" style={{ marginLeft: 8, fontWeight: 500 }}>
+          Pro Bono (Ücretsiz Hizmet Gerekli mi?)
+        </label>
       </div>
 
       <div className="lex-form-actions">
