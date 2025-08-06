@@ -4,10 +4,10 @@ using dava_avukat_eslestirme_asistani.Repositories;
 using dava_avukat_eslestirme_asistani.Services;
 using Microsoft.EntityFrameworkCore;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+// --- CORS Policy Definitions (ikisi de tanımlanıyor!) ---
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -15,24 +15,26 @@ builder.Services.AddCors(options =>
             .AllowAnyOrigin()
             .AllowAnyMethod()
             .AllowAnyHeader());
+
+    options.AddPolicy("ReactLocal",
+        policy => policy
+            .WithOrigins("http://localhost:3000") // React adresi
+            .AllowAnyHeader()
+            .AllowAnyMethod());
 });
 
-
+// Controllers ve diğer servisler
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<ICaseService, CaseService>();
 builder.Services.AddScoped<ILawyerService, LawyerService>();
-
-
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("sqlConnection")));
-
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -41,8 +43,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// CORS middleware'i burada! 
+// Hangisini aktif etmek istersen ona göre çağırırsın:
+app.UseCors("ReactLocal");  // Sadece React için izin ver
+// veya
+// app.UseCors("AllowAll"); // Herkese açık yapmak için (güvenlik için prod'da önerilmez)
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -51,8 +57,6 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
-
-app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
