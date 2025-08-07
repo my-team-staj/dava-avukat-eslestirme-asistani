@@ -84,17 +84,19 @@ function CreateCaseForm() {
       
 
       <div className="lex-form-row">
-        <label htmlFor="description">Açıklama</label>
-        <textarea
-          className="lex-form-input"
-          id="description"
-          name="description"
-          placeholder="Dava ile ilgili kısa açıklama"
-          value={form.description}
-          onChange={handleChange}
-          rows={2}
-        />
-      </div>
+  <label htmlFor="description">Açıklama <span style={{color:"red"}}>*</span></label>
+  <textarea
+    className="lex-form-input"
+    id="description"
+    name="description"
+    placeholder="Dava ile ilgili kısa açıklama"
+    value={form.description}
+    onChange={handleChange}
+    rows={2}
+    required // ZORUNLU alan için ekledik
+  />
+</div>
+
 
       <div className="lex-form-row">
         <label htmlFor="filedDate">Dava Tarihi*</label>
