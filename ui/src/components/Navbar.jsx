@@ -13,11 +13,23 @@ function Navbar() {
         <span>LeXMatchGun</span>
       </Link>
       <div className="navbar-links-new">
-        <Link to="/case-add" className={location.pathname === "/case-add" ? "active" : ""}>
+        <Link
+          to="/case-add"
+          className={location.pathname === "/case-add" ? "active" : ""}
+        >
           Dava Ekle
         </Link>
-        <Link to="/lawyer-add" className={location.pathname === "/lawyer-add" ? "active" : ""}>
+        <Link
+          to="/lawyer-add"
+          className={location.pathname === "/lawyer-add" ? "active" : ""}
+        >
           Avukat Ekle
+        </Link>
+        <Link
+          to="/lawyers"
+          className={location.pathname === "/lawyers" ? "active" : ""}
+        >
+          Avukat Listesi
         </Link>
       </div>
     </nav>

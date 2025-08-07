@@ -27,10 +27,18 @@ namespace dava_avukat_eslestirme_asistani.Services
             return _mapper.Map<LawyerDto>(entity);
         }
 
-        public async Task<IEnumerable<LawyerDto>> GetAllLawyersAsync()
+        // AVUKAT LİSTESİ (GENERIC BASE REPOSITORY'DEN ÇEKİYOR)
+        public async Task<List<LawyerDto>> GetAllLawyersAsync()
         {
-            var lawyers = await _lawyerRepository.GetAllAsync();
-            return _mapper.Map<IEnumerable<LawyerDto>>(lawyers);
+            try
+            {
+                var lawyers = await _lawyerRepository.GetAllAsync();
+                return _mapper.Map<List<LawyerDto>>(lawyers.ToList());
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Avukat listesi çekilemedi!", ex);
+            }
         }
 
         public async Task<LawyerDto?> GetLawyerByIdAsync(int id)
