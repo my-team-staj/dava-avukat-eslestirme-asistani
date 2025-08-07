@@ -42,9 +42,10 @@ namespace dava_avukat_eslestirme_asistani.Controllers
 
             return Ok(new
             {
-                TotalCount = totalCount,
-                Data = data
+                data,
+                totalCount
             });
+
         }
 
         [HttpPost]
