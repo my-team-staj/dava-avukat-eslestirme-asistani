@@ -6,30 +6,22 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// --- CORS Policy Definitions (ikisi de tanımlanıyor!) ---
+// CORS policy (React için tüm portlara izin)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy => policy
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
-
-    options.AddPolicy("ReactLocal",
-        policy => policy
-            .WithOrigins("http://localhost:3000") // React adresi
-            .AllowAnyHeader()
-            .AllowAnyMethod());
+    options.AddPolicy("AllowAll", builder =>
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader());
 });
 
-// Controllers ve diğer servisler
+// Controller, Auth, Swagger, Mapper, Services, DB Context
 builder.Services.AddControllers();
+builder.Services.AddAuthorization();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<ICaseService, CaseService>();
 builder.Services.AddScoped<ILawyerService, LawyerService>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("sqlConnection")));
 builder.Services.AddEndpointsApiExplorer();
@@ -37,29 +29,17 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Sadece 1 tane ve en üstte CORS!
+app.UseCors("AllowAll");
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// CORS middleware'i burada! 
-// Hangisini aktif etmek istersen ona göre çağırırsın:
-app.UseCors("ReactLocal");  // Sadece React için izin ver
-// veya
-// app.UseCors("AllowAll"); // Herkese açık yapmak için (güvenlik için prod'da önerilmez)
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

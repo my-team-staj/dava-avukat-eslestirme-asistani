@@ -109,18 +109,22 @@ function LawyerAddForm() {
         />
       </div>
 
-      <div className="lex-form-row">
-        <label htmlFor="email">E-Posta</label>
-        <input
-          type="email"
-          className="lex-form-input"
-          id="email"
-          name="email"
-          placeholder="avukat@email.com"
-          value={form.email}
-          onChange={handleChange}
-        />
-      </div>
+     <div className="lex-form-row">
+  <label htmlFor="email">
+    E-Posta <span style={{ color: "red" }}>*</span>
+  </label>
+  <input
+    type="email"
+    className="lex-form-input"
+    id="email"
+    name="email"
+    placeholder="avukat@email.com"
+    value={form.email}
+    onChange={handleChange}
+    required // Burası eklendi!
+  />
+</div>
+
 
       <div className="lex-form-row">
         <label htmlFor="phone">Telefon</label>
