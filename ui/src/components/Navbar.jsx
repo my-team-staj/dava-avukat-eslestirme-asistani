@@ -5,6 +5,7 @@ import "../App.css";
 
 function Navbar() {
   const location = useLocation();
+  const isActive = (path) => (location.pathname === path ? "active" : "");
 
   return (
     <nav className="navbar-new">
@@ -13,22 +14,16 @@ function Navbar() {
         <span>LeXMatchGun</span>
       </Link>
       <div className="navbar-links-new">
-        <Link
-          to="/case-add"
-          className={location.pathname === "/case-add" ? "active" : ""}
-        >
+        <Link to="/case-add" className={isActive("/case-add")}>
           Dava Ekle
         </Link>
-        <Link
-          to="/lawyer-add"
-          className={location.pathname === "/lawyer-add" ? "active" : ""}
-        >
+        <Link to="/cases" className={isActive("/cases")}>
+          Dava Listesi
+        </Link>
+        <Link to="/lawyer-add" className={isActive("/lawyer-add")}>
           Avukat Ekle
         </Link>
-        <Link
-          to="/lawyers"
-          className={location.pathname === "/lawyers" ? "active" : ""}
-        >
+        <Link to="/lawyers" className={isActive("/lawyers")}>
           Avukat Listesi
         </Link>
       </div>

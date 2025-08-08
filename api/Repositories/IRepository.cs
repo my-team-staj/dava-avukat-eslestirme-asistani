@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
@@ -14,8 +15,11 @@ namespace dava_avukat_eslestirme_asistani.Repositories
         void Delete(T entity);
         Task SaveAsync();
 
+        // Serbest LINQ sorguları için
+        IQueryable<T> Query();
+
         /// <summary>
-        /// Gelişmiş sayfalama, filtreleme, arama ve include desteği ile listeleme.
+        /// Gelişmiş sayfalama, filtreleme, sıralama ve include desteği ile listeleme.
         /// </summary>
         Task<(IEnumerable<T> Data, int TotalCount)> GetPagedAsync(
             Expression<Func<T, bool>>? filter = null,

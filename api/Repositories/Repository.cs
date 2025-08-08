@@ -31,6 +31,7 @@ namespace dava_avukat_eslestirme_asistani.Repositories
 
         public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
            => await _dbSet.Where(predicate).ToListAsync();
+        public IQueryable<T> Query() => _dbSet.AsQueryable();
 
         /// <summary>
         /// Gelişmiş sayfalama, filtreleme, arama ve include desteği ile listeleme.
