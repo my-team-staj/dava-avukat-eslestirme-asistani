@@ -294,3 +294,56 @@
     font-size: 1.3rem;
   }
 }
+
+.case-table {
+  width: 100%;
+  max-width: 1000px;
+  margin: 2rem auto;
+  border-collapse: collapse;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.case-table th,
+.case-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.case-table th {
+  background-color: #204273;
+  color: white;
+  font-size: 1rem;
+}
+
+.case-table tr:hover {
+  background-color: #f3f6fc;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin: 1.6rem 0;
+  gap: 0.5rem;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #e2e6ea;
+  color: #204273;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pagination button.active,
+.pagination button:hover {
+  background-color: #204273;
+  color: #fff;
+}
+

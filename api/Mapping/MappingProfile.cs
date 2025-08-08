@@ -10,8 +10,12 @@ namespace dava_avukat_eslestirme_asistani
         {
             CreateMap<Lawyer, LawyerDto>();
             CreateMap<LawyerCreateDto, Lawyer>();
-            CreateMap<Case, CaseDto>();
+
             CreateMap<CaseCreateDto, Case>();
+
+            CreateMap<Case, CaseDto>()
+                .ForMember(dest => dest.WorkingGroupName,
+                           opt => opt.MapFrom(src => src.WorkingGroup != null ? src.WorkingGroup.GroupName : null));
         }
     }
 }

@@ -11,5 +11,7 @@ namespace dava_avukat_eslestirme_asistani.Repositories
         void Update(T entity);
         void Delete(T entity);
         Task SaveAsync();
+
+        IQueryable<T> Query();
     }
 }

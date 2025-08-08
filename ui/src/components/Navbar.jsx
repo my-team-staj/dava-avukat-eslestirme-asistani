@@ -19,6 +19,9 @@ function Navbar() {
         <Link to="/lawyer-add" className={location.pathname === "/lawyer-add" ? "active" : ""}>
           Avukat Ekle
         </Link>
+        <Link to="/cases" className={location.pathname === "/cases" ? "active" : ""}>
+          Dava Listesi
+        </Link>
       </div>
     </nav>
   );

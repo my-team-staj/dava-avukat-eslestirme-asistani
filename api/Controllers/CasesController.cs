@@ -33,8 +33,6 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             return CreatedAtAction(nameof(GetCaseById), new { id = dto.Id }, dto);
         }
 
-
-
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCaseById(int id)
         {
@@ -44,6 +42,13 @@ namespace dava_avukat_eslestirme_asistani.Controllers
 
             var dto = _mapper.Map<CaseDto>(entity);
             return Ok(dto);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCases([FromQuery] CaseQueryParameters parameters)
+        {
+            var result = await _caseService.GetCasesAsync(parameters);
+            return Ok(result);
         }
     }
 }

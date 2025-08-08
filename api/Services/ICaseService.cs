@@ -7,5 +7,8 @@ namespace dava_avukat_eslestirme_asistani.Services
     {
         Task<Case> CreateCaseAsync(CaseCreateDto caseDto);
         Task<Case?> GetCaseByIdAsync(int id);
+        Task<PaginatedResponse<CaseDto>> GetCasesAsync(CaseQueryParameters parameters);
+
+
     }
 }

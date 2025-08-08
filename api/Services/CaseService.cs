@@ -2,6 +2,7 @@
 using dava_avukat_eslestirme_asistani.DTOs;
 using dava_avukat_eslestirme_asistani.Entities;
 using dava_avukat_eslestirme_asistani.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace dava_avukat_eslestirme_asistani.Services
 {
@@ -27,6 +28,63 @@ namespace dava_avukat_eslestirme_asistani.Services
         public async Task<Case?> GetCaseByIdAsync(int id)
         {
             return await _caseRepository.GetByIdAsync(id);
+        }
+
+        public async Task<PaginatedResponse<CaseDto>> GetCasesAsync(CaseQueryParameters parameters)
+        {
+            var query = _caseRepository.Query();
+
+            // Filtreleme
+            if (!string.IsNullOrWhiteSpace(parameters.City))
+                query = query.Where(c => c.City.Contains(parameters.City));
+
+            if (!string.IsNullOrWhiteSpace(parameters.Language))
+                query = query.Where(c => c.Language == parameters.Language);
+
+            if (!string.IsNullOrWhiteSpace(parameters.UrgencyLevel))
+                query = query.Where(c => c.UrgencyLevel == parameters.UrgencyLevel);
+
+            if (parameters.IsActive.HasValue)
+                query = query.Where(c => c.IsActive == parameters.IsActive.Value);
+
+            if (parameters.RequiresProBono.HasValue)
+                query = query.Where(c => c.RequiresProBono == parameters.RequiresProBono.Value);
+
+            // Sıralama
+            switch (parameters.SortBy?.ToLower())
+            {
+                case "title":
+                    query = parameters.SortOrder == "asc" ? query.OrderBy(c => c.Title) : query.OrderByDescending(c => c.Title);
+                    break;
+                case "city":
+                    query = parameters.SortOrder == "asc" ? query.OrderBy(c => c.City) : query.OrderByDescending(c => c.City);
+                    break;
+                default:
+                    query = parameters.SortOrder == "asc" ? query.OrderBy(c => c.FiledDate) : query.OrderByDescending(c => c.FiledDate);
+                    break;
+            }
+
+            // Toplam kayıt sayısı
+            var totalItems = await query.CountAsync();
+
+            // Sayfalama
+            var skip = (parameters.Page - 1) * parameters.PageSize;
+            var cases = await query
+                .Skip(skip)
+                .Take(parameters.PageSize)
+                .Include(c => c.WorkingGroup)
+                .ToListAsync();
+
+            var caseDtos = _mapper.Map<List<CaseDto>>(cases);
+
+            return new PaginatedResponse<CaseDto>
+            {
+                Page = parameters.Page,
+                PageSize = parameters.PageSize,
+                TotalItems = totalItems,
+                TotalPages = (int)Math.Ceiling(totalItems / (double)parameters.PageSize),
+                Items = caseDtos
+            };
         }
     }
 }
