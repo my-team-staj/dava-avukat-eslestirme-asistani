@@ -23,29 +23,24 @@ namespace dava_avukat_eslestirme_asistani.Controllers
         }
 
         /// <summary>
-        /// Arama, filtreleme ve sayfalama destekli avukat listesini döner.
+        /// Arama, filtreleme, sıralama ve sayfalama destekli avukat listesini döner.
         /// </summary>
-        /// <param name="search">İsim, şehir veya dil araması</param>
-        /// <param name="city">Şehir filtresi</param>
-        /// <param name="isActive">Aktiflik filtresi</param>
-        /// <param name="page">Sayfa numarası (varsayılan: 1)</param>
-        /// <param name="pageSize">Sayfa boyutu (varsayılan: 10)</param>
         [HttpGet]
-        public async Task<IActionResult> GetLawyers(
-            [FromQuery] string? search,
-            [FromQuery] string? city,
-            [FromQuery] bool? isActive,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetLawyers([FromQuery] LawyerQueryParameters query)
         {
-            var (data, totalCount) = await _lawyerService.GetLawyersAsync(search, city, isActive, page, pageSize);
+            // Deconstruction yerine result objesi kullanıyoruz
+            var result = await _lawyerService.GetLawyersAsync(query);
 
-            return Ok(new
+            var response = new PaginatedResponse<LawyerDto>
             {
-                data,
-                totalCount
-            });
+                Page = query.Page,
+                PageSize = query.PageSize,
+                TotalItems = result.TotalItems,
+                TotalPages = result.TotalPages,
+                Items = result.Items
+            };
 
+            return Ok(response);
         }
 
         [HttpPost]
@@ -60,7 +55,7 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             var created = await _lawyerService.AddLawyerAsync(lawyerDto);
             var dto = _mapper.Map<LawyerDto>(created);
 
-            return CreatedAtAction(nameof(GetLawyerById), new { id = dto.Id }, new { id = dto.Id });
+            return CreatedAtAction(nameof(GetLawyerById), new { id = dto.Id }, dto);
         }
 
         [HttpGet("{id}")]
@@ -69,7 +64,7 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             var lawyer = await _lawyerService.GetLawyerByIdAsync(id);
             if (lawyer == null)
             {
-                _logger.LogWarning($"Lawyer with id {id} not found.");
+                _logger.LogWarning("Lawyer with id {Id} not found.", id);
                 return NotFound();
             }
             return Ok(lawyer);

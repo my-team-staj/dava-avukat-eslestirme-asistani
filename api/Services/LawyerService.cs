@@ -1,7 +1,10 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using dava_avukat_eslestirme_asistani.DTOs;
 using dava_avukat_eslestirme_asistani.Entities;
 using dava_avukat_eslestirme_asistani.Repositories;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,18 +30,10 @@ namespace dava_avukat_eslestirme_asistani.Services
             return _mapper.Map<LawyerDto>(entity);
         }
 
-        // AVUKAT LİSTESİ (GENERIC BASE REPOSITORY'DEN ÇEKİYOR)
         public async Task<List<LawyerDto>> GetAllLawyersAsync()
         {
-            try
-            {
-                var lawyers = await _lawyerRepository.GetAllAsync();
-                return _mapper.Map<List<LawyerDto>>(lawyers.ToList());
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Avukat listesi çekilemedi!", ex);
-            }
+            var lawyers = await _lawyerRepository.GetAllAsync();
+            return _mapper.Map<List<LawyerDto>>(lawyers.ToList());
         }
 
         public async Task<LawyerDto?> GetLawyerByIdAsync(int id)
@@ -48,31 +43,50 @@ namespace dava_avukat_eslestirme_asistani.Services
         }
 
         /// <summary>
-        /// Arama, filtreleme ve sayfalama ile avukat listesi döner.
+        /// Filtreleme, sıralama ve sayfalama ile avukat listesi döner.
         /// </summary>
-        public async Task<(IEnumerable<LawyerDto> Data, int TotalCount)> GetLawyersAsync(
-            string? search = null,
-            string? city = null,
-            bool? isActive = null,
-            int page = 1,
-            int pageSize = 10)
+        public async Task<(List<LawyerDto> Items, int TotalItems, int TotalPages)> GetLawyersAsync(LawyerQueryParameters query)
         {
-            // Predicate ile filtreleme/arama
-            System.Linq.Expressions.Expression<System.Func<Lawyer, bool>> predicate = l =>
-                (string.IsNullOrEmpty(search) || l.Name.Contains(search) || l.City.Contains(search) || l.LanguagesSpoken.Contains(search))
-                && (string.IsNullOrEmpty(city) || l.City == city)
-                && (isActive == null || l.IsActive == isActive);
+            var q = _lawyerRepository.Query();
 
-            var (entities, totalCount) = await _lawyerRepository.GetPagedAsync(
-                filter: predicate,
-                orderBy: q => q.OrderByDescending(l => l.Rating),
-                page: page,
-                pageSize: pageSize
-            );
+            // Filtreleme
+            if (!string.IsNullOrWhiteSpace(query.City))
+                q = q.Where(l => l.City == query.City);
 
-            var dtos = _mapper.Map<IEnumerable<LawyerDto>>(entities);
+            if (query.IsActive.HasValue)
+                q = q.Where(l => l.IsActive == query.IsActive.Value);
 
-            return (dtos, totalCount);
+            if (query.AvailableForProBono.HasValue)
+                q = q.Where(l => l.AvailableForProBono == query.AvailableForProBono.Value);
+
+            // Toplam kayıt
+            var totalItems = await q.CountAsync();
+
+            // Sıralama
+            var sortBy = (query.SortBy ?? "Name").ToLowerInvariant();
+            var desc = string.Equals(query.SortOrder, "desc", StringComparison.OrdinalIgnoreCase);
+
+            q = sortBy switch
+            {
+                "rating" => desc ? q.OrderByDescending(l => l.Rating).ThenBy(l => l.Name)
+                                 : q.OrderBy(l => l.Rating).ThenBy(l => l.Name),
+                "name" or _ => desc ? q.OrderByDescending(l => l.Name)
+                                    : q.OrderBy(l => l.Name)
+            };
+
+            // Sayfalama
+            var page = query.Page <= 0 ? 1 : query.Page;
+            var pageSize = query.PageSize <= 0 ? 10 : query.PageSize;
+            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            // DTO'ya projeksiyon
+            var items = await q
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<LawyerDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return (items, totalItems, totalPages);
         }
     }
 }
