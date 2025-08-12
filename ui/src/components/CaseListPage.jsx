@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../App.css";
+import CaseUpdateModal from "../components/CaseUpdateModal"; // 👈 Güncelleme modali eklendi
 
 function CaseListPage() {
   const [cases, setCases] = useState([]);
@@ -19,6 +20,10 @@ function CaseListPage() {
     sortOrder: "desc",
   });
   const [totalPages, setTotalPages] = useState(1);
+
+  // Modal state
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchCases();
@@ -76,6 +81,17 @@ function CaseListPage() {
         return { ...prev, sortBy: "filedDate", sortOrder: "desc", page: 1 };
       }
     });
+  };
+
+  // Güncelleme butonu tıklanınca çalışır
+  const handleEditClick = async (caseId) => {
+    try {
+      const res = await axios.get(`https://localhost:60227/api/cases/${caseId}`);
+      setSelectedCase(res.data);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Dava bilgisi alınamadı:", error);
+    }
   };
 
   return (
@@ -144,6 +160,7 @@ function CaseListPage() {
                   (query.sortOrder === "asc" ? "▲" : query.sortOrder === "desc" ? "▼" : "")}
               </th>
               <th>Detay</th>
+              <th>İşlem</th>
             </tr>
           </thead>
           <tbody>
@@ -161,11 +178,14 @@ function CaseListPage() {
                       {expandedRows.includes(c.id) ? "Kapat" : "Aç"}
                     </button>
                   </td>
+                  <td>
+                    <button onClick={() => handleEditClick(c.id)}>Güncelle</button>
+                  </td>
                 </tr>
 
                 {expandedRows.includes(c.id) && (
                   <tr>
-                    <td colSpan="7">
+                    <td colSpan="8">
                       <div style={{ background: "#f2f5fa", padding: "12px", borderRadius: "10px" }}>
                         <strong>Açıklama:</strong> {c.description} <br />
                         <strong>Tecrübe:</strong> {c.requiredExperienceLevel} yıl <br />
@@ -193,6 +213,15 @@ function CaseListPage() {
           </button>
         ))}
       </div>
+
+      {/* Güncelleme Modalı */}
+      {isModalOpen && (
+        <CaseUpdateModal
+          caseData={selectedCase}
+          onClose={() => setIsModalOpen(false)}
+          onUpdated={fetchCases}
+        />
+      )}
     </div>
   );
 }

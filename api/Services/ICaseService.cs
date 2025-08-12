@@ -9,6 +9,8 @@ namespace dava_avukat_eslestirme_asistani.Services
         Task<Case?> GetCaseByIdAsync(int id);
         Task<PaginatedResponse<CaseDto>> GetCasesAsync(CaseQueryParameters parameters);
 
+        Task<Case> UpdateCaseAsync(int id, CaseUpdateDto caseDto);
+
 
     }
 }
