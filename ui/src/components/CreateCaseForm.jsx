@@ -1,65 +1,106 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 import "../App.css";
 
-function CreateCaseForm() {
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    filedDate: new Date().toISOString().substring(0, 10),
-    city: "",
-    language: "Türkçe",
-    urgencyLevel: "Normal",
-    requiresProBono: false,
-    estimatedDurationInDays: 0,
-    requiredExperienceLevel: "Orta",
-    workingGroupId: ""
-  });
+const API_BASE = "https://localhost:60227/api";
 
+const initialForm = {
+  title: "",
+  description: "",
+  filedDate: new Date().toISOString().substring(0, 10),
+  city: "",
+  language: "Türkçe",
+  urgencyLevel: "Normal",
+  requiresProBono: false,
+  estimatedDurationInDays: 0,
+  requiredExperienceLevel: "Orta",
+  workingGroupId: "" // select için string; submit'te null/number'a çevrilecek
+};
+
+function CreateCaseForm() {
+  const [form, setForm] = useState(initialForm);
   const [workingGroups, setWorkingGroups] = useState([]);
 
+  // Çalışma gruplarını güvenli şekilde çek
   useEffect(() => {
-    axios
-      .get("https://localhost:60227/api/workinggroups")
-      .then((res) => setWorkingGroups(res.data))
-      .catch((err) =>
-        console.error("Çalışma grupları alınırken hata oluştu", err)
-      );
+    (async () => {
+      try {
+        // Farklı casing denemeleri (IIS vs Kestrel)
+        let res;
+        try { res = await axios.get(`${API_BASE}/workinggroups`); } catch {}
+        if (!res) { try { res = await axios.get(`${API_BASE}/WorkingGroups`); } catch {} }
+        if (!res) { res = await axios.get(`${API_BASE}/Workinggroups`); }
+
+        const raw = res?.data ?? [];
+        const list = Array.isArray(raw) ? raw : (raw.items ?? []);
+        const normalized = (list || [])
+          .map(g => ({
+            id: g.id ?? g.workingGroupId ?? g.groupId,
+            name: g.groupName ?? g.name ?? g.title
+          }))
+          .filter(x => x.id && x.name);
+
+        setWorkingGroups(normalized);
+      } catch (err) {
+        console.error("Çalışma grupları alınırken hata oluştu", err);
+        toast.error("Çalışma grupları yüklenemedi.");
+      }
+    })();
   }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+
+    // sayısal alanları sayıya çevir
+    const numberFields = ["estimatedDurationInDays"];
+    const nextValue =
+      type === "checkbox"
+        ? checked
+        : numberFields.includes(name)
+        ? (value === "" ? "" : Number(value))
+        : value;
+
+    setForm((prev) => ({ ...prev, [name]: nextValue }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // basit zorunlu alan kontrolleri
+    if (!form.title.trim()) {
+      toast.warn("Başlık zorunlu");
+      return;
+    }
+    if (!form.description.trim()) {
+      toast.warn("Açıklama zorunlu");
+      return;
+    }
+    if (!form.city.trim()) {
+      toast.warn("Şehir zorunlu");
+      return;
+    }
+    if (!form.filedDate) {
+      toast.warn("Dava tarihi zorunlu");
+      return;
+    }
+
+    const payload = {
+      ...form,
+      // boş string ise null gönder
+      workingGroupId:
+        form.workingGroupId === "" ? null : Number(form.workingGroupId),
+    };
+
     try {
-      const response = await axios.post(
-        "https://localhost:60227/api/cases",
-        form
-      );
-      alert(`✅ Dava başarıyla oluşturuldu. ID: ${response.data.id}`);
-      setForm({
-        title: "",
-        caseType: "",
-        description: "",
-        filedDate: new Date().toISOString().substring(0, 10),
-        city: "",
-        language: "Türkçe",
-        urgencyLevel: "Normal",
-        requiresProBono: false,
-        estimatedDurationInDays: 0,
-        requiredExperienceLevel: "Orta",
-        workingGroupId: ""
-      });
+      await axios.post(`${API_BASE}/cases`, payload);
+      toast.success("✅ Dava başarıyla oluşturuldu!");
+      setForm(initialForm);
     } catch (error) {
       console.error(error);
-      alert("❌ Kayıt sırasında bir hata oluştu.");
+      // BE message varsa göster
+      const msg = error?.response?.data?.message || "❌ Kayıt sırasında bir hata oluştu.";
+      toast.error(msg);
     }
   };
 
@@ -68,7 +109,7 @@ function CreateCaseForm() {
       <h2>Dava Oluştur</h2>
 
       <div className="lex-form-row">
-        <label htmlFor="title">Başlık*</label>
+        <label htmlFor="title">Başlık<span style={{color:"red"}}>*</span></label>
         <input
           type="text"
           className="lex-form-input"
@@ -81,25 +122,22 @@ function CreateCaseForm() {
         />
       </div>
 
-      
+      <div className="lex-form-row">
+        <label htmlFor="description">Açıklama<span style={{color:"red"}}>*</span></label>
+        <textarea
+          className="lex-form-input"
+          id="description"
+          name="description"
+          placeholder="Dava ile ilgili kısa açıklama"
+          value={form.description}
+          onChange={handleChange}
+          rows={2}
+          required
+        />
+      </div>
 
       <div className="lex-form-row">
-  <label htmlFor="description">Açıklama <span style={{color:"red"}}>*</span></label>
-  <textarea
-    className="lex-form-input"
-    id="description"
-    name="description"
-    placeholder="Dava ile ilgili kısa açıklama"
-    value={form.description}
-    onChange={handleChange}
-    rows={2}
-    required // ZORUNLU alan için ekledik
-  />
-</div>
-
-
-      <div className="lex-form-row">
-        <label htmlFor="filedDate">Dava Tarihi*</label>
+        <label htmlFor="filedDate">Dava Tarihi<span style={{color:"red"}}>*</span></label>
         <input
           type="date"
           className="lex-form-input"
@@ -112,7 +150,7 @@ function CreateCaseForm() {
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="city">Şehir*</label>
+        <label htmlFor="city">Şehir<span style={{color:"red"}}>*</span></label>
         <input
           type="text"
           className="lex-form-input"
@@ -165,7 +203,6 @@ function CreateCaseForm() {
           onChange={handleChange}
           min="1"
           max="365"
-          required
         />
       </div>
 
@@ -195,8 +232,8 @@ function CreateCaseForm() {
         >
           <option value="">-- Çalışma Grubu Seçin --</option>
           {workingGroups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.groupName}
+            <option key={group.id} value={String(group.id)}>
+              {group.name}
             </option>
           ))}
         </select>

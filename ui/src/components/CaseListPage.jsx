@@ -1,12 +1,18 @@
+// ui/src/components/CaseListPage.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../App.css";
 
-function CaseListPage() {
+const API_BASE = "https://localhost:60227/api";
+
+export default function CaseListPage() {
   const [cases, setCases] = useState([]);
   const [cities, setCities] = useState([]);
+  const [languages, setLanguages] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [query, setQuery] = useState({
     page: 1,
     pageSize: 5,
@@ -18,104 +24,135 @@ function CaseListPage() {
     sortBy: "filedDate",
     sortOrder: "desc",
   });
-  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchCases();
-    fetchCities();
+    fetchFiltersMeta();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  const fetchCases = async () => {
+  async function fetchCases() {
     setLoading(true);
     try {
-      const response = await axios.get("https://localhost:60227/api/cases", {
-        params: query,
-      });
-      setCases(response.data.items);
-      setTotalPages(response.data.totalPages);
-    } catch (error) {
-      console.error("Veri çekme hatası:", error);
+      const res = await axios.get(`${API_BASE}/cases`, { params: query });
+      setCases(res.data?.items ?? []);
+      setTotalPages(res.data?.totalPages ?? 1);
+    } catch (err) {
+      console.error("Veri çekme hatası:", err);
+      setCases([]);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }
 
-  const fetchCities = async () => {
+  async function fetchFiltersMeta() {
     try {
-      const response = await axios.get("https://localhost:60227/api/cases", {
-        params: { page: 1, pageSize: 100 },
+      const res = await axios.get(`${API_BASE}/cases`, {
+        params: { page: 1, pageSize: 200 },
       });
-      const items = response.data.items || [];
-      const uniqueCities = [...new Set(items.map((item) => item.city).filter(Boolean))];
-      setCities(uniqueCities);
-    } catch (error) {
-      console.error("Şehirleri alırken hata oluştu:", error);
+      const items = res.data?.items ?? [];
+      setCities([...new Set(items.map(i => i.city).filter(Boolean))]);
+      setLanguages([...new Set(items.map(i => i.language).filter(Boolean))]);
+    } catch (err) {
+      console.error("Filtre metaları alınamadı:", err);
     }
-  };
+  }
 
-  const handlePageChange = (page) => {
-    setQuery((prev) => ({ ...prev, page }));
-  };
-
-  const toggleExpand = (id) => {
-    setExpandedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
-  };
+  const handlePageChange = (page) => setQuery(prev => ({ ...prev, page }));
+  const toggleExpand = (id) =>
+    setExpandedRows(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
   const handleSortByDate = () => {
-    setQuery((prev) => {
+    setQuery(prev => {
       if (prev.sortBy === "filedDate") {
-        if (prev.sortOrder === "desc") {
-          return { ...prev, sortOrder: "asc", page: 1 };
-        } else if (prev.sortOrder === "asc") {
-          return { ...prev, sortBy: "", sortOrder: "", page: 1 };
-        } else {
-          return { ...prev, sortOrder: "desc", page: 1 };
-        }
-      } else {
-        return { ...prev, sortBy: "filedDate", sortOrder: "desc", page: 1 };
+        if (prev.sortOrder === "desc") return { ...prev, sortOrder: "asc", page: 1 };
+        if (prev.sortOrder === "asc") return { ...prev, sortBy: "", sortOrder: "", page: 1 };
+        return { ...prev, sortOrder: "desc", page: 1 };
       }
+      return { ...prev, sortBy: "filedDate", sortOrder: "desc", page: 1 };
     });
   };
 
   return (
     <div className="container">
-      <h2>Dava Listesi</h2>
+      <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        Dava Listesi
+        {!loading && (
+          <span
+            style={{
+              background: "#204273",
+              color: "#fff",
+              borderRadius: 14,
+              padding: "2px 10px",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            {cases.length} kayıt
+          </span>
+        )}
+      </h2>
 
-      {/* Filtreleme Alanı */}
+      {/* Filtreler */}
       <div className="filters">
-        <select
-          value={query.city}
-          onChange={(e) => setQuery((prev) => ({ ...prev, city: e.target.value, page: 1 }))}>
-          <option value="">Tüm Şehirler</option>
-          {cities.map((city, idx) => (
-            <option key={idx} value={city}>{city}</option>
-          ))}
-        </select>
+        <div className="filter-item">
+          <label>Şehir</label>
+          <select
+            value={query.city}
+            onChange={(e) => setQuery(prev => ({ ...prev, city: e.target.value, page: 1 }))}
+          >
+            <option value="">Tüm Şehirler</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          value={query.urgencyLevel}
-          onChange={(e) => setQuery((prev) => ({ ...prev, urgencyLevel: e.target.value, page: 1 }))}>
-          <option value="">Tüm Aciliyetler</option>
-          <option value="Normal">Normal</option>
-          <option value="Acil">Acil</option>
-          <option value="Düşük Öncelik">Düşük Öncelik</option>
-        </select>
+        <div className="filter-item">
+          <label>Dil</label>
+          <select
+            value={query.language}
+            onChange={(e) => setQuery(prev => ({ ...prev, language: e.target.value, page: 1 }))}
+          >
+            <option value="">Tüm Diller</option>
+            {languages.map((lang) => (
+              <option key={lang} value={lang}>{lang}</option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          value={query.isActive}
-          onChange={(e) => setQuery((prev) => ({ ...prev, isActive: e.target.value, page: 1 }))}>
-          <option value="">Tümü</option>
-          <option value="true">Aktif</option>
-          <option value="false">Pasif</option>
-        </select>
+        <div className="filter-item">
+          <label>Aciliyet</label>
+          <select
+            value={query.urgencyLevel}
+            onChange={(e) => setQuery(prev => ({ ...prev, urgencyLevel: e.target.value, page: 1 }))}
+          >
+            <option value="">Tüm Aciliyetler</option>
+            <option value="Normal">Normal</option>
+            <option value="Acil">Acil</option>
+            <option value="Düşük Öncelik">Düşük Öncelik</option>
+          </select>
+        </div>
 
-        <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <div className="filter-item">
+          <label>Durum</label>
+          <select
+            value={query.isActive}
+            onChange={(e) => setQuery(prev => ({ ...prev, isActive: e.target.value, page: 1 }))}
+          >
+            <option value="">Tümü</option>
+            <option value="true">Aktif</option>
+            <option value="false">Pasif</option>
+          </select>
+        </div>
+
+        <label className="filter-checkbox">
           <input
             type="checkbox"
             checked={query.requiresProBono === "true"}
             onChange={(e) =>
-              setQuery((prev) => ({
+              setQuery(prev => ({
                 ...prev,
                 requiresProBono: e.target.checked ? "true" : "",
                 page: 1,
@@ -129,6 +166,10 @@ function CaseListPage() {
       {/* Liste */}
       {loading ? (
         <p>Yükleniyor...</p>
+      ) : cases.length === 0 ? (
+        <div className="form-card" style={{ textAlign: "center", marginTop: 16 }}>
+          Bu filtrelerle eşleşen dava bulunamadı.
+        </div>
       ) : (
         <table className="case-table">
           <thead>
@@ -138,7 +179,7 @@ function CaseListPage() {
               <th>Aciliyet</th>
               <th>Çalışma Grubu</th>
               <th>Pro Bono</th>
-              <th onClick={handleSortByDate} style={{ cursor: "pointer" }}>
+              <th onClick={handleSortByDate} style={{ cursor: "pointer", whiteSpace: "nowrap" }}>
                 Tarih{" "}
                 {query.sortBy === "filedDate" &&
                   (query.sortOrder === "asc" ? "▲" : query.sortOrder === "desc" ? "▼" : "")}
@@ -155,7 +196,7 @@ function CaseListPage() {
                   <td>{c.urgencyLevel}</td>
                   <td>{c.workingGroupName || "-"}</td>
                   <td>{c.requiresProBono ? "Evet" : "Hayır"}</td>
-                  <td>{new Date(c.filedDate).toLocaleDateString()}</td>
+                  <td>{c.filedDate ? new Date(c.filedDate).toLocaleDateString() : "-"}</td>
                   <td>
                     <button onClick={() => toggleExpand(c.id)}>
                       {expandedRows.includes(c.id) ? "Kapat" : "Aç"}
@@ -165,12 +206,16 @@ function CaseListPage() {
 
                 {expandedRows.includes(c.id) && (
                   <tr>
-                    <td colSpan="7">
-                      <div style={{ background: "#f2f5fa", padding: "12px", borderRadius: "10px" }}>
-                        <strong>Açıklama:</strong> {c.description} <br />
-                        <strong>Tecrübe:</strong> {c.requiredExperienceLevel} yıl <br />
-                        <strong>Dil:</strong> {c.language} <br />
-                        <strong>Tahmini Süre:</strong> {c.estimatedDurationInDays} gün <br />
+                    <td colSpan={7}>
+                      <div style={{ background: "#f2f5fa", padding: 12, borderRadius: 10 }}>
+                        <strong>Açıklama:</strong> {c.description || "-"} <br />
+                        <strong>Tecrübe Seviyesi:</strong> {c.requiredExperienceLevel || "-"} <br />
+                        <strong>Dil:</strong> {c.language || "-"} <br />
+                        <strong>Tahmini Süre:</strong>{" "}
+                        {typeof c.estimatedDurationInDays === "number" && c.estimatedDurationInDays > 0
+                          ? `${c.estimatedDurationInDays} gün`
+                          : "-"}
+                        <br />
                         <strong>Aktiflik:</strong> {c.isActive ? "Aktif" : "Pasif"}
                       </div>
                     </td>
@@ -184,17 +229,16 @@ function CaseListPage() {
 
       {/* Sayfalama */}
       <div className="pagination">
-        {[...Array(totalPages).keys()].map((i) => (
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
           <button
-            key={i}
-            onClick={() => handlePageChange(i + 1)}
-            className={query.page === i + 1 ? "active" : ""}>
-            {i + 1}
+            key={p}
+            onClick={() => handlePageChange(p)}
+            className={query.page === p ? "active" : ""}
+          >
+            {p}
           </button>
         ))}
       </div>
     </div>
   );
 }
-
-export default CaseListPage;
