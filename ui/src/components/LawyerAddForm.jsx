@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 import "../App.css";
 
 function LawyerAddForm() {
@@ -41,7 +42,7 @@ function LawyerAddForm() {
 
     try {
       await axios.post("https://localhost:60227/api/lawyers", form);
-      alert("✅ Avukat başarıyla eklendi!");
+      toast.success("✅ Avukat başarıyla eklendi!");
       setForm({
         name: "",
         experienceYears: 0,
@@ -59,7 +60,7 @@ function LawyerAddForm() {
       });
     } catch (err) {
       console.error(err);
-      alert("❌ Hata oluştu.");
+      toast.error("❌ Kayıt sırasında hata oluştu.");
     }
   };
 
@@ -109,22 +110,19 @@ function LawyerAddForm() {
         />
       </div>
 
-     <div className="lex-form-row">
-  <label htmlFor="email">
-    E-Posta <span style={{ color: "red" }}>*</span>
-  </label>
-  <input
-    type="email"
-    className="lex-form-input"
-    id="email"
-    name="email"
-    placeholder="avukat@email.com"
-    value={form.email}
-    onChange={handleChange}
-    required // Burası eklendi!
-  />
-</div>
-
+      <div className="lex-form-row">
+        <label htmlFor="email">E-Posta*</label>
+        <input
+          type="email"
+          className="lex-form-input"
+          id="email"
+          name="email"
+          placeholder="avukat@email.com"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+      </div>
 
       <div className="lex-form-row">
         <label htmlFor="phone">Telefon</label>
