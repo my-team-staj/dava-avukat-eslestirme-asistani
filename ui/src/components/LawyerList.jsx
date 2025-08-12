@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom"; // ✅ eklendi
 import "../App.css";
 
 function LawyerList() {
@@ -138,7 +139,7 @@ function LawyerList() {
               <th>Pro Bono</th>
               <th>Puan</th>
               <th>Durum</th>
-              <th>Detay</th>
+              <th>İşlemler</th> {/* ✅ başlık değişti */}
             </tr>
           </thead>
           <tbody>
@@ -156,7 +157,12 @@ function LawyerList() {
                   <td>
                     <button onClick={() => toggleExpand(l.id)}>
                       {expandedRows.includes(l.id) ? "Kapat" : "Aç"}
-                    </button>
+                    </button>{" "}
+                    <Link to={`/lawyers/edit/${l.id}`}>
+                      <button style={{ backgroundColor: "#1976d2", color: "#fff" }}>
+                        Güncelle
+                      </button>
+                    </Link>
                   </td>
                 </tr>
 

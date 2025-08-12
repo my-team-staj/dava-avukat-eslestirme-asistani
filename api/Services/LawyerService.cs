@@ -42,10 +42,34 @@ namespace dava_avukat_eslestirme_asistani.Services
             return lawyer == null ? null : _mapper.Map<LawyerDto>(lawyer);
         }
 
+        public async Task<LawyerDto> UpdateLawyerAsync(int id, LawyerUpdateDto dto)
+        {
+            // 1️⃣ ID’ye göre mevcut avukatı bul
+            var lawyer = await _lawyerRepository.GetByIdAsync(id);
+            if (lawyer == null)
+                throw new KeyNotFoundException("Avukat bulunamadı");
+
+            // 2️⃣ Body’de ID kontrolü (opsiyonel: gönderildiyse aynı mı?)
+            // Eğer body’de LawyerUpdateDto’da Id varsa:
+            // if (dto.Id.HasValue && dto.Id.Value != id) 
+            //     throw new ArgumentException("Güncellenecek avukat ID’si route parametresi ile aynı olmalı.");
+
+            // 3️⃣ DTO'dan entity’e mapping uygula
+            _mapper.Map(dto, lawyer);
+
+            // 4️⃣ Güncelle ve kaydet
+            _lawyerRepository.Update(lawyer);
+            await _lawyerRepository.SaveAsync();
+
+            return _mapper.Map<LawyerDto>(lawyer);
+        }
+
+
         /// <summary>
         /// Filtreleme, sıralama ve sayfalama ile avukat listesi döner.
         /// </summary>
-        public async Task<(List<LawyerDto> Items, int TotalItems, int TotalPages)> GetLawyersAsync(LawyerQueryParameters query)
+        public async Task<(List<LawyerDto> Items, int TotalItems, int TotalPages)>
+            GetLawyersAsync(LawyerQueryParameters query)
         {
             var q = _lawyerRepository.Query();
 
