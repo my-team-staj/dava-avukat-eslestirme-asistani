@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useToast } from "./Toast"; // ✅ toast eklendi
 
 const API_BASE = "https://localhost:60227/api";
 
@@ -27,6 +28,7 @@ const initialState = {
  *  - onSaved?: () => Promise<void> | void
  */
 export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
+  const toast = useToast(); // ✅
   const [form, setForm] = useState(initialState);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,10 +106,20 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
         workingGroupId: form.workingGroupId === "" ? null : Number(form.workingGroupId)
       };
       await axios.put(`${API_BASE}/lawyers/${lawyerId}`, payload);
+
+      // ✅ başarı tostu
+      toast.success("Kayıt başarıyla güncellendi");
+
       if (onSaved) await onSaved();
       if (onClose) onClose();
     } catch (e2) {
-      setError(e2?.response?.data?.message || "Güncelleme başarısız");
+      const msg =
+        e2?.response?.data?.message ||
+        e2?.response?.data?.error ||
+        "Güncelleme başarısız";
+      setError(msg);
+      // ❌ hata tostu
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -116,45 +128,134 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
   if (loading) return <div>Yükleniyor...</div>;
 
   return (
-    <form onSubmit={handleSubmit} className="form-card">
+    <form onSubmit={handleSubmit} className="form-card" aria-busy={saving}>
       {error && <div className="error-message">{error}</div>}
 
       <div className="form-grid">
         <label htmlFor={`name-${lawyerId}`}>İsim</label>
-        <input id={`name-${lawyerId}`} className="lex-form-input" name="name" value={form.name} onChange={handleChange} />
+        <input
+          id={`name-${lawyerId}`}
+          className="lex-form-input"
+          name="name"
+          value={form.name}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`experienceYears-${lawyerId}`}>Deneyim (yıl)</label>
-        <input id={`experienceYears-${lawyerId}`} className="lex-form-input" type="number" name="experienceYears" value={form.experienceYears} onChange={handleChange} />
+        <input
+          id={`experienceYears-${lawyerId}`}
+          className="lex-form-input"
+          type="number"
+          name="experienceYears"
+          value={form.experienceYears}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`city-${lawyerId}`}>Şehir</label>
-        <input id={`city-${lawyerId}`} className="lex-form-input" name="city" value={form.city} onChange={handleChange} />
+        <input
+          id={`city-${lawyerId}`}
+          className="lex-form-input"
+          name="city"
+          value={form.city}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`email-${lawyerId}`}>E‑posta</label>
-        <input id={`email-${lawyerId}`} className="lex-form-input" type="email" name="email" value={form.email} onChange={handleChange} />
+        <input
+          id={`email-${lawyerId}`}
+          className="lex-form-input"
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`phone-${lawyerId}`}>Telefon</label>
-        <input id={`phone-${lawyerId}`} className="lex-form-input" name="phone" value={form.phone} onChange={handleChange} />
+        <input
+          id={`phone-${lawyerId}`}
+          className="lex-form-input"
+          name="phone"
+          value={form.phone}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`baroNumber-${lawyerId}`}>Baro Numarası</label>
-        <input id={`baroNumber-${lawyerId}`} className="lex-form-input" name="baroNumber" value={form.baroNumber} onChange={handleChange} />
+        <input
+          id={`baroNumber-${lawyerId}`}
+          className="lex-form-input"
+          name="baroNumber"
+          value={form.baroNumber}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`languagesSpoken-${lawyerId}`}>Diller</label>
-        <input id={`languagesSpoken-${lawyerId}`} className="lex-form-input" name="languagesSpoken" value={form.languagesSpoken} onChange={handleChange} />
+        <input
+          id={`languagesSpoken-${lawyerId}`}
+          className="lex-form-input"
+          name="languagesSpoken"
+          value={form.languagesSpoken}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`education-${lawyerId}`}>Eğitim</label>
-        <input id={`education-${lawyerId}`} className="lex-form-input" name="education" value={form.education} onChange={handleChange} />
+        <input
+          id={`education-${lawyerId}`}
+          className="lex-form-input"
+          name="education"
+          value={form.education}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`availableForProBono-${lawyerId}`}>Pro Bono</label>
-        <input id={`availableForProBono-${lawyerId}`} type="checkbox" name="availableForProBono" checked={form.availableForProBono} onChange={handleChange} />
+        <input
+          id={`availableForProBono-${lawyerId}`}
+          type="checkbox"
+          name="availableForProBono"
+          checked={form.availableForProBono}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`rating-${lawyerId}`}>Puan (0‑5)</label>
-        <input id={`rating-${lawyerId}`} className="lex-form-input" type="number" step="0.1" name="rating" value={form.rating} onChange={handleChange} />
+        <input
+          id={`rating-${lawyerId}`}
+          className="lex-form-input"
+          type="number"
+          step="0.1"
+          name="rating"
+          value={form.rating}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`totalCasesHandled-${lawyerId}`}>Toplam Dava</label>
-        <input id={`totalCasesHandled-${lawyerId}`} className="lex-form-input" type="number" name="totalCasesHandled" value={form.totalCasesHandled} onChange={handleChange} />
+        <input
+          id={`totalCasesHandled-${lawyerId}`}
+          className="lex-form-input"
+          type="number"
+          name="totalCasesHandled"
+          value={form.totalCasesHandled}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`isActive-${lawyerId}`}>Aktif mi?</label>
-        <input id={`isActive-${lawyerId}`} type="checkbox" name="isActive" checked={form.isActive} onChange={handleChange} />
+        <input
+          id={`isActive-${lawyerId}`}
+          type="checkbox"
+          name="isActive"
+          checked={form.isActive}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`workingGroupId-${lawyerId}`}>Çalışma Grubu</label>
         <select
@@ -163,6 +264,7 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
           name="workingGroupId"
           value={form.workingGroupId === null ? "" : String(form.workingGroupId)}
           onChange={handleChange}
+          disabled={saving || groups.length === 0}
         >
           <option value="">-- Çalışma Grubu Seçin --</option>
           {groups.map(g => (
@@ -175,7 +277,7 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
         <button type="submit" disabled={saving} className="btn-primary">
           {saving ? "Kaydediliyor..." : "Kaydet"}
         </button>
-        <button type="button" className="btn-secondary" onClick={onClose}>
+        <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
           Kapat
         </button>
       </div>
