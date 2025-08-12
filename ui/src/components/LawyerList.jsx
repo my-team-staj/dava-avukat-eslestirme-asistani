@@ -160,7 +160,7 @@ function LawyerList() {
                     </button>{" "}
                     <Link to={`/lawyers/edit/${l.id}`}>
                       <button style={{ backgroundColor: "#1976d2", color: "#fff" }}>
-                        Güncelle
+                        Düzenle
                       </button>
                     </Link>
                   </td>

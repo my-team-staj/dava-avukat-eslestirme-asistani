@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import "../App.css";
 
 const API_BASE = "https://localhost:60227/api";
 
@@ -18,33 +17,64 @@ const initialState = {
   totalCasesHandled: 0,
   education: "",
   isActive: true,
-  workingGroupId: "" // input'ta boş göstermek için string; gönderirken null/number'a çevireceğiz
+  workingGroupId: "" // select'te boş göstermek için string; submit'te null/number'a çevrilecek
 };
 
 export default function LawyerEditForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [form, setForm] = useState(initialState);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
       try {
-        const res = await axios.get(`${API_BASE}/lawyers/${id}`);
-        const data = res.data || {};
+        // Avukat + Çalışma Grupları paralel
+        const [lawyerRes, groupsRes] = await Promise.all([
+          axios.get(`${API_BASE}/lawyers/${id}`),
+          (async () => {
+            // Kasa/route farklarına dayanıklı denemeler
+            try { return await axios.get(`${API_BASE}/WorkingGroups`); } catch {}
+            try { return await axios.get(`${API_BASE}/workinggroups`); } catch {}
+            return await axios.get(`${API_BASE}/Workinggroups`);
+          })()
+        ]);
+
+        if (!mounted) return;
+
+        // Avukat form
+        const data = lawyerRes?.data ?? {};
         setForm({
           ...initialState,
           ...data,
-          workingGroupId: data.workingGroupId ?? ""
+          workingGroupId: data?.workingGroupId ?? ""
         });
+
+        // Grupları normalize et (items mı direkt mi? alan adları farklı olabilir)
+        const raw = groupsRes?.data ?? [];
+        const list = Array.isArray(raw) ? raw : (raw.items ?? []);
+        const normalized = (list || [])
+          .map(g => ({
+            id: g.id ?? g.groupId ?? g.workingGroupId,
+            name: g.name ?? g.groupName ?? g.title
+          }))
+          .filter(x => x.id && x.name);
+
+        setGroups(normalized);
       } catch {
-        setError("Avukat bilgisi alınamadı");
+        setError("Veriler yüklenemedi");
       } finally {
         setLoading(false);
       }
     })();
+
+    return () => { mounted = false; };
   }, [id]);
 
   function handleChange(e) {
@@ -55,8 +85,8 @@ export default function LawyerEditForm() {
         type === "checkbox"
           ? checked
           : ["experienceYears", "rating", "totalCasesHandled"].includes(name)
-          ? (value === "" ? "" : Number(value))
-          : value
+            ? (value === "" ? "" : Number(value))
+            : value
     }));
   }
 
@@ -65,25 +95,19 @@ export default function LawyerEditForm() {
     setError("");
 
     if (!form.name?.trim()) return setError("İsim zorunlu");
-    if (!form.email?.trim()) return setError("E-posta zorunlu");
-    if (!/^\S+@\S+\.\S+$/.test(form.email)) return setError("Geçerli bir e-posta girin");
+    if (!form.email?.trim()) return setError("E‑posta zorunlu");
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) return setError("Geçerli bir e‑posta girin");
 
     try {
       setSaving(true);
-
       const payload = {
         ...form,
-        // 0 veya "" geldiyse null gönder → FK hatası önlenir
-        workingGroupId:
-          form.workingGroupId === "" || Number(form.workingGroupId) === 0
-            ? null
-            : Number(form.workingGroupId)
+        workingGroupId: form.workingGroupId === "" ? null : Number(form.workingGroupId)
       };
-
       await axios.put(`${API_BASE}/lawyers/${id}`, payload);
       navigate("/lawyers");
-    } catch (e) {
-      setError(e.response?.data?.message || "Güncelleme başarısız");
+    } catch (e2) {
+      setError(e2?.response?.data?.message || "Güncelleme başarısız");
     } finally {
       setSaving(false);
     }
@@ -107,7 +131,7 @@ export default function LawyerEditForm() {
           <label htmlFor="city">Şehir</label>
           <input id="city" className="lex-form-input" name="city" value={form.city} onChange={handleChange} />
 
-          <label htmlFor="email">E-posta</label>
+          <label htmlFor="email">E‑posta</label>
           <input id="email" className="lex-form-input" type="email" name="email" value={form.email} onChange={handleChange} />
 
           <label htmlFor="phone">Telefon</label>
@@ -125,25 +149,28 @@ export default function LawyerEditForm() {
           <label htmlFor="availableForProBono">Pro Bono</label>
           <input id="availableForProBono" type="checkbox" name="availableForProBono" checked={form.availableForProBono} onChange={handleChange} />
 
-          <label htmlFor="rating">Rating</label>
+          <label htmlFor="rating">Puan (0‑5)</label>
           <input id="rating" className="lex-form-input" type="number" step="0.1" name="rating" value={form.rating} onChange={handleChange} />
 
-          <label htmlFor="totalCasesHandled">Toplam Dosya</label>
+          <label htmlFor="totalCasesHandled">Toplam Dava</label>
           <input id="totalCasesHandled" className="lex-form-input" type="number" name="totalCasesHandled" value={form.totalCasesHandled} onChange={handleChange} />
 
           <label htmlFor="isActive">Aktif mi?</label>
           <input id="isActive" type="checkbox" name="isActive" checked={form.isActive} onChange={handleChange} />
 
-          <label htmlFor="workingGroupId">Çalışma Grubu (opsiyonel)</label>
-          <input
+          <label htmlFor="workingGroupId">Çalışma Grubu</label>
+          <select
             id="workingGroupId"
             className="lex-form-input"
-            type="number"
             name="workingGroupId"
-            value={form.workingGroupId}
+            value={form.workingGroupId === null ? "" : String(form.workingGroupId)}
             onChange={handleChange}
-            placeholder="Boş bırakılabilir"
-          />
+          >
+            <option value="">-- Çalışma Grubu Seçin --</option>
+            {groups.map(g => (
+              <option key={g.id} value={String(g.id)}>{g.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="form-actions">
