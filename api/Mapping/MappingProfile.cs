@@ -16,6 +16,8 @@ namespace dava_avukat_eslestirme_asistani
             CreateMap<Case, CaseDto>()
                 .ForMember(dest => dest.WorkingGroupName,
                            opt => opt.MapFrom(src => src.WorkingGroup != null ? src.WorkingGroup.GroupName : null));
+            CreateMap<LawyerUpdateDto, Lawyer>();
+
         }
     }
 }

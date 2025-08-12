@@ -42,6 +42,24 @@ namespace dava_avukat_eslestirme_asistani.Controllers
 
             return Ok(response);
         }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateLawyer(int id, [FromBody] LawyerUpdateDto dto)
+        {
+            try
+            {
+                var updatedLawyer = await _lawyerService.UpdateLawyerAsync(id, dto);
+                return Ok(updatedLawyer);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> CreateLawyer([FromBody] LawyerCreateDto lawyerDto)
