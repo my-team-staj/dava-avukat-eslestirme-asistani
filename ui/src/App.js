@@ -7,6 +7,8 @@ import LawyerAddForm from "./components/LawyerAddForm";
 import LawyerList from "./components/LawyerList";   // YENİ: Listeleme sayfasını ekledik
 import CreateCaseForm from "./components/CreateCaseForm";
 import CaseListPage from "./components/CaseListPage";
+import LawyerEditForm from "./components/LawyerEditForm";
+
 
 import "./App.css";
 
@@ -22,6 +24,8 @@ function App() {
             <Route path="/lawyers" element={<LawyerList />} /> {/* YENİ: Avukat Listesi */}
             <Route path="/case-add" element={<CreateCaseForm />} />
             <Route path="/cases" element={<CaseListPage />} /> {/* YENİ: Dava Listesi */}
+            <Route path="/lawyers/edit/:id" element={<LawyerEditForm />} />
+
           </Routes>
         </main>
         <Footer />
