@@ -29,7 +29,7 @@ namespace dava_avukat_eslestirme_asistani.Controllers
         public async Task<IActionResult> GetLawyers([FromQuery] LawyerQueryParameters query)
         {
             // Deconstruction yerine result objesi kullanıyoruz
-            var result = await _lawyerService.GetLawyersAsync(query);
+            var result = await _lawyerService.GetLawyersAsync(query); 
 
             var response = new PaginatedResponse<LawyerDto>
             {

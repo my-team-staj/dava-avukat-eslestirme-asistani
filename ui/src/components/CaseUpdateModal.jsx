@@ -6,7 +6,7 @@ export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
   const [formData, setFormData] = useState({});
   const [workingGroups, setWorkingGroups] = useState([]);
 
-  // basit toast
+  // mini toast
   const notify = (msg) => {
     const el = document.createElement("div");
     el.className = "toast";
@@ -31,132 +31,227 @@ export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
     };
   }, [onClose]);
 
+  // Çalışma grupları
   useEffect(() => {
     axios
       .get("https://localhost:60227/api/workinggroups")
-      .then((r) => setWorkingGroups(r.data || []))
+      .then((r) => setWorkingGroups(Array.isArray(r.data) ? r.data : []))
       .catch(() => setWorkingGroups([]));
   }, []);
 
+  // Modal açılışında formu doldur
   useEffect(() => {
     if (!caseData) return;
     setFormData({
       title: caseData.title ?? "",
-      description: caseData.description ?? "",
       city: caseData.city ?? "",
       language: caseData.language ?? "",
       urgencyLevel: caseData.urgencyLevel ?? "",
-      requiresProBono: !!caseData.requiresProBono,
-      estimatedDurationInDays: caseData.estimatedDurationInDays ?? 0,
+      estimatedDurationInDays:
+        caseData.estimatedDurationInDays ?? 0,
       requiredExperienceLevel: caseData.requiredExperienceLevel ?? "",
-      filedDate: caseData.filedDate ? String(caseData.filedDate).substring(0, 10) : "",
-      isActive: typeof caseData.isActive === "boolean" ? caseData.isActive : true,
-      workingGroupId: caseData.workingGroupId != null ? String(caseData.workingGroupId) : ""
+      filedDate: caseData.filedDate
+        ? String(caseData.filedDate).substring(0, 10)
+        : "",
+      isActive:
+        typeof caseData.isActive === "boolean" ? caseData.isActive : true,
+      workingGroupId:
+        caseData.workingGroupId != null
+          ? String(caseData.workingGroupId)
+          : "",
+      requiresProBono: !!caseData.requiresProBono,
+      description: caseData.description ?? "",
     });
   }, [caseData]);
 
+  // backdrop tıklayınca kapat
   const handleBackdrop = (e) => {
-    if (e.target.classList.contains("modal-backdrop")) onClose();
+    if (e.target.classList.contains("modal-overlay")) onClose();
   };
 
+  // ortak change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (type === "checkbox") return setFormData((p) => ({ ...p, [name]: checked }));
-    if (name === "isActive") return setFormData((p) => ({ ...p, [name]: value === "true" }));
-    if (name === "estimatedDurationInDays")
-      return setFormData((p) => ({ ...p, [name]: value === "" ? "" : Number(value) }));
+
+    if (type === "checkbox") {
+      setFormData((p) => ({ ...p, [name]: checked }));
+      return;
+    }
+    if (name === "isActive") {
+      setFormData((p) => ({ ...p, [name]: value === "true" }));
+      return;
+    }
+    if (name === "estimatedDurationInDays") {
+      setFormData((p) => ({
+        ...p,
+        [name]: value === "" ? "" : Number(value),
+      }));
+      return;
+    }
     setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const payload = {
       ...formData,
-      requiresProBono: !!formData.requiresProBono,
       isActive: !!formData.isActive,
+      requiresProBono: !!formData.requiresProBono,
       estimatedDurationInDays:
-        formData.estimatedDurationInDays === "" ? 0 : Number(formData.estimatedDurationInDays),
-      workingGroupId: formData.workingGroupId === "" ? null : Number(formData.workingGroupId),
+        formData.estimatedDurationInDays === ""
+          ? 0
+          : Number(formData.estimatedDurationInDays),
+      workingGroupId:
+        formData.workingGroupId === "" ? null : Number(formData.workingGroupId),
     };
-    await axios.put(`https://localhost:60227/api/cases/${caseData.id}`, payload);
-    notify("Başarıyla güncellendi");
-    onUpdated?.();
-    onClose();
+
+    try {
+      await axios.put(
+        `https://localhost:60227/api/cases/${caseData.id}`,
+        payload
+      );
+      notify("Dava başarıyla güncellendi");
+      onUpdated?.();
+      onClose();
+    } catch (err) {
+      notify("Güncelleme başarısız oldu");
+      // istersen burada validation hatasını da gösterebiliriz
+    }
   };
 
   return (
-    <div className="modal-backdrop" onMouseDown={handleBackdrop}>
-      <div className="modal modal-centered modal-fixed" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onMouseDown={handleBackdrop}>
+      <div
+        className="modal-card"
+        style={{ maxWidth: 720 }} // Avukat modalıyla aynı genişlik
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h3 className="modal-title">Dava Güncelle</h3>
-          <button type="button" className="modal-close" aria-label="Kapat" onClick={onClose}>×</button>
+          <button
+            type="button"
+            className="modal-close"
+            aria-label="Kapat"
+            onClick={onClose}
+          >
+            ×
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form modal-grid">
-          {/* sol sütun */}
-          <div className="form-item">
-            <label>Başlık</label>
-            <input name="title" value={formData.title || ""} onChange={handleChange} />
-          </div>
+        <div className="form-card">
+          {/* Avukat modalındaki grid ile aynı: 2 kolonlu */}
+          <form onSubmit={handleSubmit} className="form-grid">
+            {/* 1. satır */}
+            <label htmlFor="title">Başlık</label>
+            <input
+              id="title"
+              name="title"
+              className="lex-form-input"
+              placeholder="Örn: Miras Davası"
+              value={formData.title || ""}
+              onChange={handleChange}
+            />
 
-          <div className="form-item">
-            <label>Şehir</label>
-            <input name="city" value={formData.city || ""} onChange={handleChange} />
-          </div>
+            {/* 2. satır */}
+            <label htmlFor="city">Şehir</label>
+            <input
+              id="city"
+              name="city"
+              className="lex-form-input"
+              placeholder="Örn: Konya"
+              value={formData.city || ""}
+              onChange={handleChange}
+            />
 
-          <div className="form-item">
-            <label>Dil</label>
-            <input name="language" value={formData.language || ""} onChange={handleChange} />
-          </div>
+            {/* 3. satır */}
+            <label htmlFor="language">Dil</label>
+            <input
+              id="language"
+              name="language"
+              className="lex-form-input"
+              placeholder="Örn: Türkçe"
+              value={formData.language || ""}
+              onChange={handleChange}
+            />
 
-          <div className="form-item">
-            <label>Aciliyet</label>
-            <select name="urgencyLevel" value={formData.urgencyLevel || ""} onChange={handleChange}>
+            {/* 4. satır */}
+            <label htmlFor="urgencyLevel">Aciliyet</label>
+            <select
+              id="urgencyLevel"
+              name="urgencyLevel"
+              className="lex-form-input"
+              value={formData.urgencyLevel || ""}
+              onChange={handleChange}
+            >
               <option value="">Seçiniz</option>
+              <option value="Düşük Öncelik">Düşük Öncelik</option>
               <option value="Normal">Normal</option>
               <option value="Acil">Acil</option>
-              <option value="Düşük Öncelik">Düşük Öncelik</option>
             </select>
-          </div>
 
-          <div className="form-item">
-            <label>Tahmini Süre (gün)</label>
+            {/* 5. satır */}
+            <label htmlFor="estimatedDurationInDays">
+              Tahmini Süre (gün)
+            </label>
             <input
+              id="estimatedDurationInDays"
               type="number"
+              min="0"
               name="estimatedDurationInDays"
+              className="lex-form-input"
               value={formData.estimatedDurationInDays}
               onChange={handleChange}
-              min="0"
             />
-          </div>
 
-          <div className="form-item">
-            <label>Tecrübe Seviyesi</label>
-            <input
+            {/* 6. satır */}
+            <label htmlFor="requiredExperienceLevel">
+              Tecrübe Seviyesi
+            </label>
+            <select
+              id="requiredExperienceLevel"
               name="requiredExperienceLevel"
+              className="lex-form-input"
               value={formData.requiredExperienceLevel || ""}
               onChange={handleChange}
+            >
+              <option value="">Seçiniz</option>
+              <option value="Junior">Junior</option>
+              <option value="Mid">Orta</option>
+              <option value="Senior">Kıdemli</option>
+              <option value="Uzman">Uzman</option>
+            </select>
+
+            {/* 7. satır */}
+            <label htmlFor="filedDate">Dava Tarihi</label>
+            <input
+              id="filedDate"
+              type="date"
+              name="filedDate"
+              className="lex-form-input"
+              value={formData.filedDate || ""}
+              onChange={handleChange}
             />
-          </div>
 
-          <div className="form-item">
-            <label>Dava Tarihi</label>
-            <input type="date" name="filedDate" value={formData.filedDate || ""} onChange={handleChange} />
-          </div>
-
-          <div className="form-item">
-            <label>Aktif</label>
-            <select name="isActive" value={String(!!formData.isActive)} onChange={handleChange}>
+            {/* 8. satır */}
+            <label htmlFor="isActive">Aktif</label>
+            <select
+              id="isActive"
+              name="isActive"
+              className="lex-form-input"
+              value={String(!!formData.isActive)}
+              onChange={handleChange}
+            >
               <option value="true">Aktif</option>
               <option value="false">Pasif</option>
             </select>
-          </div>
 
-          <div className="form-item">
-            <label>Çalışma Grubu</label>
+            {/* 9. satır */}
+            <label htmlFor="workingGroupId">Çalışma Grubu</label>
             <select
               id="workingGroupId"
               name="workingGroupId"
+              className="lex-form-input"
               value={formData.workingGroupId ?? ""}
               onChange={handleChange}
             >
@@ -167,35 +262,48 @@ export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
                 </option>
               ))}
             </select>
-          </div>
 
-          <div className="form-item form-item-inline">
-            <input
-              id="requiresProBono"
-              type="checkbox"
-              name="requiresProBono"
-              checked={!!formData.requiresProBono}
-              onChange={handleChange}
-            />
+            {/* 10. satır */}
             <label htmlFor="requiresProBono">Pro Bono</label>
-          </div>
+            <div className="lex-form-input" style={{ display: "flex", alignItems: "center" }}>
+              <input
+                id="requiresProBono"
+                type="checkbox"
+                name="requiresProBono"
+                checked={!!formData.requiresProBono}
+                onChange={handleChange}
+              />
+              <label htmlFor="requiresProBono" style={{ marginLeft: 8 }}>
+                Evet
+              </label>
+            </div>
 
-          {/* açıklama tüm genişlik */}
-          <div className="form-item form-item-full">
-            <label>Açıklama</label>
+            {/* 11. satır - geniş alan */}
+            <label htmlFor="description" style={{ alignSelf: "start" }}>
+              Açıklama
+            </label>
             <textarea
+              id="description"
               name="description"
+              className="lex-form-input"
+              placeholder="Dava ile ilgili kısa açıklama"
               value={formData.description || ""}
               onChange={handleChange}
               rows={3}
+              style={{ width: "100%" }}
             />
-          </div>
 
-          <div className="modal-actions">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Vazgeç</button>
-            <button type="submit" className="btn btn-primary">Kaydet</button>
-          </div>
-        </form>
+            {/* Aksiyonlar */}
+            <div className="form-actions" style={{ gridColumn: "1 / -1" }}>
+              <button type="button" className="btn-secondary" onClick={onClose}>
+                Vazgeç
+              </button>
+              <button type="submit" className="btn-primary">
+                Kaydet
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -214,15 +214,7 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
           disabled={saving}
         />
 
-        <label htmlFor={`availableForProBono-${lawyerId}`}>Pro Bono</label>
-        <input
-          id={`availableForProBono-${lawyerId}`}
-          type="checkbox"
-          name="availableForProBono"
-          checked={form.availableForProBono}
-          onChange={handleChange}
-          disabled={saving}
-        />
+        
 
         <label htmlFor={`rating-${lawyerId}`}>Puan (0‑5)</label>
         <input
@@ -256,6 +248,15 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
           onChange={handleChange}
           disabled={saving}
         />
+        <label htmlFor={`availableForProBono-${lawyerId}`}>Pro Bono</label>
+        <input
+          id={`availableForProBono-${lawyerId}`}
+          type="checkbox"
+          name="availableForProBono"
+          checked={form.availableForProBono}
+          onChange={handleChange}
+          disabled={saving}
+        />
 
         <label htmlFor={`workingGroupId-${lawyerId}`}>Çalışma Grubu</label>
         <select
@@ -274,12 +275,13 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
       </div>
 
       <div className="form-actions">
+         <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
+          Vazgeç
+        </button>
         <button type="submit" disabled={saving} className="btn-primary">
           {saving ? "Kaydediliyor..." : "Kaydet"}
         </button>
-        <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
-          Kapat
-        </button>
+       
       </div>
     </form>
   );

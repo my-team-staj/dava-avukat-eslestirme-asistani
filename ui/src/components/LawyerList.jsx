@@ -86,20 +86,7 @@ function LawyerList() {
     <div className="container">
       <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
         Avukat Listesi
-        {!loading && (
-          <span
-            style={{
-              background: "#204273",
-              color: "#fff",
-              borderRadius: 14,
-              padding: "2px 10px",
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            {lawyers.length} kayıt
-          </span>
-        )}
+        
       </h2>
 
       {/* Filtre Barı – CaseListPage ile aynı stil */}
@@ -185,7 +172,7 @@ function LawyerList() {
                   <td>{l.isActive ? "Aktif" : "Pasif"}</td>
                   <td>
                     <button onClick={() => toggleExpand(l.id)}>
-                      {expandedRows.includes(l.id) ? "Kapat" : "Aç"}
+                      {expandedRows.includes(l.id) ? "Kapat" : "Detay Aç"}
                     </button>{" "}
                     <button
                       onClick={() => openEditModal(l.id)}

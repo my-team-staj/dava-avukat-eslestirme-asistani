@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../App.css";
-import CaseUpdateModal from "../components/CaseUpdateModal";
+import CaseUpdateModal from "./CaseUpdateModal"; // 👈 düzeltildi
 
 const API_BASE = "https://localhost:60227/api";
 
@@ -26,7 +26,6 @@ export default function CaseListPage() {
     sortOrder: "desc",
   });
 
-  // Modal state
   const [selectedCase, setSelectedCase] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -51,7 +50,6 @@ export default function CaseListPage() {
     }
   }
 
-  // Şehir ve dil seçeneklerini tek sefer geniş sayfa isteği ile topla
   async function fetchFiltersMeta() {
     try {
       const res = await axios.get(`${API_BASE}/cases`, {
@@ -97,20 +95,7 @@ export default function CaseListPage() {
     <div className="container">
       <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
         Dava Listesi
-        {!loading && (
-          <span
-            style={{
-              background: "#204273",
-              color: "#fff",
-              borderRadius: 14,
-              padding: "2px 10px",
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            {cases.length} kayıt
-          </span>
-        )}
+       
       </h2>
 
       {/* Filtreler */}
@@ -203,7 +188,6 @@ export default function CaseListPage() {
                 {query.sortBy === "filedDate" &&
                   (query.sortOrder === "asc" ? "▲" : query.sortOrder === "desc" ? "▼" : "")}
               </th>
-              <th>Detay</th>
               <th>İşlem</th>
             </tr>
           </thead>
@@ -219,12 +203,21 @@ export default function CaseListPage() {
                   <td>{c.filedDate ? new Date(c.filedDate).toLocaleDateString() : "-"}</td>
                   <td>
                     <button onClick={() => toggleExpand(c.id)}>
-                      {expandedRows.includes(c.id) ? "Kapat" : "Aç"}
+                      {expandedRows.includes(c.id) ? "Kapat" : "Detay Aç"}
+                    </button>{" "}
+                    
+
+                    <button 
+                    
+                    style={{ backgroundColor: "#1976d2", color: "#fff" }}
+                    onClick={() => handleEditClick(c.id)}
+                    
+                    >
+                      Güncelle
+                    
                     </button>
                   </td>
-                  <td>
-                    <button onClick={() => handleEditClick(c.id)}>Güncelle</button>
-                  </td>
+                
                 </tr>
 
                 {expandedRows.includes(c.id) && (
