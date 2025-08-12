@@ -86,5 +86,16 @@ namespace dava_avukat_eslestirme_asistani.Services
                 Items = caseDtos
             };
         }
+        public async Task<Case?> UpdateCaseAsync(int id, CaseUpdateDto dto)
+        {
+            var entity = await _caseRepository.GetByIdAsync(id);
+            if (entity is null) return null;
+
+            // Tüm alanları güncelle (PUT mantığı)
+            _mapper.Map(dto, entity);
+
+            await _caseRepository.SaveAsync();
+            return entity;
+        }
     }
 }

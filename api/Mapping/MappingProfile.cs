@@ -11,6 +11,8 @@ namespace dava_avukat_eslestirme_asistani
             CreateMap<Lawyer, LawyerDto>();
             CreateMap<LawyerCreateDto, Lawyer>();
 
+            CreateMap<CaseUpdateDto, Case>();
+
             CreateMap<CaseCreateDto, Case>();
 
             CreateMap<Case, CaseDto>()

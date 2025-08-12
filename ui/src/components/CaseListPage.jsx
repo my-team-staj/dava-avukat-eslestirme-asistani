@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../App.css";
+import CaseUpdateModal from "../components/CaseUpdateModal";
 
 const API_BASE = "https://localhost:60227/api";
 
@@ -25,6 +26,10 @@ export default function CaseListPage() {
     sortOrder: "desc",
   });
 
+  // Modal state
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   useEffect(() => {
     fetchCases();
     fetchFiltersMeta();
@@ -46,6 +51,7 @@ export default function CaseListPage() {
     }
   }
 
+  // Şehir ve dil seçeneklerini tek sefer geniş sayfa isteği ile topla
   async function fetchFiltersMeta() {
     try {
       const res = await axios.get(`${API_BASE}/cases`, {
@@ -60,18 +66,31 @@ export default function CaseListPage() {
   }
 
   const handlePageChange = (page) => setQuery(prev => ({ ...prev, page }));
+
   const toggleExpand = (id) =>
-    setExpandedRows(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+    setExpandedRows(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
 
   const handleSortByDate = () => {
     setQuery(prev => {
       if (prev.sortBy === "filedDate") {
         if (prev.sortOrder === "desc") return { ...prev, sortOrder: "asc", page: 1 };
-        if (prev.sortOrder === "asc") return { ...prev, sortBy: "", sortOrder: "", page: 1 };
+        if (prev.sortOrder === "asc")  return { ...prev, sortBy: "", sortOrder: "", page: 1 };
         return { ...prev, sortOrder: "desc", page: 1 };
       }
       return { ...prev, sortBy: "filedDate", sortOrder: "desc", page: 1 };
     });
+  };
+
+  const handleEditClick = async (caseId) => {
+    try {
+      const res = await axios.get(`${API_BASE}/cases/${caseId}`);
+      setSelectedCase(res.data);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Dava bilgisi alınamadı:", error);
+    }
   };
 
   return (
@@ -185,6 +204,7 @@ export default function CaseListPage() {
                   (query.sortOrder === "asc" ? "▲" : query.sortOrder === "desc" ? "▼" : "")}
               </th>
               <th>Detay</th>
+              <th>İşlem</th>
             </tr>
           </thead>
           <tbody>
@@ -202,11 +222,14 @@ export default function CaseListPage() {
                       {expandedRows.includes(c.id) ? "Kapat" : "Aç"}
                     </button>
                   </td>
+                  <td>
+                    <button onClick={() => handleEditClick(c.id)}>Güncelle</button>
+                  </td>
                 </tr>
 
                 {expandedRows.includes(c.id) && (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <div style={{ background: "#f2f5fa", padding: 12, borderRadius: 10 }}>
                         <strong>Açıklama:</strong> {c.description || "-"} <br />
                         <strong>Tecrübe Seviyesi:</strong> {c.requiredExperienceLevel || "-"} <br />
@@ -239,6 +262,15 @@ export default function CaseListPage() {
           </button>
         ))}
       </div>
+
+      {/* Güncelleme Modalı */}
+      {isModalOpen && (
+        <CaseUpdateModal
+          caseData={selectedCase}
+          onClose={() => setIsModalOpen(false)}
+          onUpdated={fetchCases}
+        />
+      )}
     </div>
   );
 }

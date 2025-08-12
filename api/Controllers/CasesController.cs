@@ -50,5 +50,15 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             var result = await _caseService.GetCasesAsync(parameters);
             return Ok(result);
         }
+        
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateCase(int id, [FromBody] CaseUpdateDto dto)
+        {
+            var updated = await _caseService.UpdateCaseAsync(id, dto);
+            if (updated is null) return NotFound();
+
+            return Ok(updated); // ya da NoContent() istersen
+        }
+
     }
 }
