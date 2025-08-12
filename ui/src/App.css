@@ -474,5 +474,60 @@ h2{
     margin-top: 6px;
   }
 }
+/* Modal overlay ve kart */
+.modal-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 9999;
+}
+
+.modal-card{
+  width: 100%;
+  max-width: 820px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+  overflow: hidden;
+  animation: modalIn .15s ease-out;
+}
+
+@keyframes modalIn{
+  from{ transform: translateY(10px); opacity: .8; }
+  to{ transform: translateY(0); opacity: 1; }
+}
+
+.modal-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3{
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-close{
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #444;
+}
+
+/* Form kart içeride de güzel görünsün */
+.modal-card .form-card{
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
 
 

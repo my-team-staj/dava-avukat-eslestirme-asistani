@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom"; // ✅ eklendi
 import "../App.css";
+import LawyerEditForm from "./LawyerEditForm"; // mevcut formu modal içinde kullanacağız
+
+const API_BASE = "https://localhost:60227/api";
 
 function LawyerList() {
   const [lawyers, setLawyers] = useState([]);
   const [cities, setCities] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
+  const [editingLawyerId, setEditingLawyerId] = useState(null); // modal açık olan avukat
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState({
     page: 1,
@@ -22,16 +25,15 @@ function LawyerList() {
   useEffect(() => {
     fetchLawyers();
     fetchCities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   const fetchLawyers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("https://localhost:60227/api/lawyers", {
-        params: query,
-      });
-      setLawyers(res.data.items);
-      setTotalPages(res.data.totalPages);
+      const res = await axios.get(`${API_BASE}/lawyers`, { params: query });
+      setLawyers(res.data.items || []);
+      setTotalPages(res.data.totalPages || 1);
     } catch (error) {
       console.error("Avukat verileri alınamadı:", error);
     }
@@ -40,9 +42,7 @@ function LawyerList() {
 
   const fetchCities = async () => {
     try {
-      const res = await axios.get("https://localhost:60227/api/lawyers", {
-        params: { page: 1, pageSize: 100 },
-      });
+      const res = await axios.get(`${API_BASE}/lawyers`, { params: { page: 1, pageSize: 100 } });
       const items = res.data.items || [];
       const uniqueCities = [...new Set(items.map((item) => item.city).filter(Boolean))];
       setCities(uniqueCities);
@@ -51,9 +51,7 @@ function LawyerList() {
     }
   };
 
-  const handlePageChange = (page) => {
-    setQuery((prev) => ({ ...prev, page }));
-  };
+  const handlePageChange = (page) => setQuery((prev) => ({ ...prev, page }));
 
   const toggleExpand = (id) => {
     setExpandedRows((prev) =>
@@ -64,17 +62,20 @@ function LawyerList() {
   const handleSortByName = () => {
     setQuery((prev) => {
       if (prev.sortBy === "name") {
-        if (prev.sortOrder === "asc") {
-          return { ...prev, sortOrder: "desc", page: 1 };
-        } else if (prev.sortOrder === "desc") {
-          return { ...prev, sortBy: "", sortOrder: "", page: 1 };
-        } else {
-          return { ...prev, sortOrder: "asc", page: 1 };
-        }
-      } else {
-        return { ...prev, sortBy: "name", sortOrder: "asc", page: 1 };
+        if (prev.sortOrder === "asc") return { ...prev, sortOrder: "desc", page: 1 };
+        if (prev.sortOrder === "desc") return { ...prev, sortBy: "", sortOrder: "", page: 1 };
+        return { ...prev, sortOrder: "asc", page: 1 };
       }
+      return { ...prev, sortBy: "name", sortOrder: "asc", page: 1 };
     });
+  };
+
+  const openEditModal = (id) => setEditingLawyerId(id);
+  const closeEditModal = () => setEditingLawyerId(null);
+
+  // overlay tıklamasında kapat
+  const handleOverlayClick = (e) => {
+    if (e.target.classList.contains("modal-overlay")) closeEditModal();
   };
 
   return (
@@ -89,9 +90,7 @@ function LawyerList() {
         >
           <option value="">Tüm Şehirler</option>
           {cities.map((city, idx) => (
-            <option key={idx} value={city}>
-              {city}
-            </option>
+            <option key={idx} value={city}>{city}</option>
           ))}
         </select>
 
@@ -139,7 +138,7 @@ function LawyerList() {
               <th>Pro Bono</th>
               <th>Puan</th>
               <th>Durum</th>
-              <th>İşlemler</th> {/* ✅ başlık değişti */}
+              <th>İşlemler</th>
             </tr>
           </thead>
           <tbody>
@@ -158,11 +157,12 @@ function LawyerList() {
                     <button onClick={() => toggleExpand(l.id)}>
                       {expandedRows.includes(l.id) ? "Kapat" : "Aç"}
                     </button>{" "}
-                    <Link to={`/lawyers/edit/${l.id}`}>
-                      <button style={{ backgroundColor: "#1976d2", color: "#fff" }}>
-                        Düzenle
-                      </button>
-                    </Link>
+                    <button
+                      onClick={() => openEditModal(l.id)}
+                      style={{ backgroundColor: "#1976d2", color: "#fff" }}
+                    >
+                      Güncelle
+                    </button>
                   </td>
                 </tr>
 
@@ -196,6 +196,24 @@ function LawyerList() {
           </button>
         ))}
       </div>
+
+      {/* MODAL: ekranda merkezde kutucuk */}
+      {editingLawyerId !== null && (
+        <div className="modal-overlay" onClick={handleOverlayClick}>
+          <div className="modal-card">
+            <div className="modal-header">
+              <h3>Avukat Güncelle</h3>
+              <button className="modal-close" onClick={closeEditModal}>×</button>
+            </div>
+
+            <LawyerEditForm
+              lawyerId={editingLawyerId}
+              onClose={closeEditModal}
+              onSaved={fetchLawyers}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
