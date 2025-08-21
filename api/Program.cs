@@ -24,6 +24,8 @@ builder.Services.AddScoped<ILawyerService, LawyerService>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("sqlConnection")));
+builder.Services.AddScoped<dava_avukat_eslestirme_asistani.Services.CandidateQueryService>();
+builder.Services.AddHttpClient<dava_avukat_eslestirme_asistani.Services.LlmMatchService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

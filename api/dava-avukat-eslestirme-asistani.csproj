@@ -5,6 +5,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>dava_avukat_eslestirme_asistani</RootNamespace>
+		<UserSecretsId>ab8c76dd-a975-4dba-83d1-5b7a4a7367fb</UserSecretsId>
 	</PropertyGroup>
 
 	<ItemGroup>
