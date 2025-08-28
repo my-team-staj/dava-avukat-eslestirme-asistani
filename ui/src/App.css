@@ -2584,6 +2584,29 @@ h2 {
   .lawyer-modal .modal-header h2 { font-size: 1.2rem; }
 }
 
+
 }
+/* ==== Modal Scroll Fix ==== */
+.modal-card,
+.modal-content {
+  max-height: 90vh;         /* Ekranın %90 yüksekliğini geçmesin */
+  overflow-y: auto;         /* İçerik fazla olursa kaydırma çıksın */
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-card .form-card,
+.modal-content .form-card {
+  max-height: none;         /* İçerideki form sabitlenmesin */
+}
+
+.modal-actions {
+  position: sticky;         /* Butonlar her zaman altta kalsın */
+  bottom: 0;
+  background: #fff;
+  padding-top: 1rem;
+  margin-top: auto;
+}
+
 
 
