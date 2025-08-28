@@ -16,7 +16,18 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             _cq = cq; _llm = llm;
         }
 
+        /// <summary>
+        /// Dava için en uygun avukatları önerir
+        /// </summary>
+        /// <param name="req">Eşleştirme isteği parametreleri</param>
+        /// <returns>Eşleştirilen avukat listesi</returns>
+        /// <response code="200">Başarılı eşleştirme sonucu</response>
+        /// <response code="400">Geçersiz istek</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("suggest")]
+        [ProducesResponseType(typeof(MatchResponse), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
         public async Task<ActionResult<MatchResponse>> Suggest([FromBody] MatchRequest req)
         {
             var topK = req.TopK <= 0 ? 3 : req.TopK;

@@ -8,6 +8,7 @@ import LawyerAddForm from "./components/LawyerAddForm";
 import LawyerList from "./components/LawyerList";
 import CreateCaseForm from "./components/CreateCaseForm";
 import CaseListPage from "./components/CaseListPage";
+import MatchPage from "./components/MatchPage";
 import { ToastProvider } from "./components/Toast"; // kendi provider
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -27,6 +28,7 @@ function App() {
               <Route path="/lawyers" element={<LawyerList />} />
               <Route path="/case-add" element={<CreateCaseForm />} />
               <Route path="/cases" element={<CaseListPage />} />
+              <Route path="/match" element={<MatchPage />} />
             </Routes>
           </main>
           <Footer />
