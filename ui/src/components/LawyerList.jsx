@@ -23,6 +23,62 @@ function LawyerList() {
   });
   const [totalPages, setTotalPages] = useState(1);
 
+  // 🔹 Çalışma grubu ID->Ad sözlüğü
+  const [wgMap, setWgMap] = useState({});
+  const [wgReady, setWgReady] = useState(false);
+
+  // --- helpers ---
+  const WG_URLS = [
+    `${API_BASE}/working-groups`,
+    `${API_BASE}/workinggroups`,
+    `${API_BASE}/workinggroup`,
+    `${API_BASE}/groups`,
+  ];
+
+  function extractArray(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload.items)) return payload.items;
+    if (Array.isArray(payload.data)) return payload.data;
+    return [];
+  }
+
+  function buildWgMap(arr) {
+    const map = {};
+    for (const g of arr) {
+      const id = g?.id ?? g?.groupId ?? g?.wgId;
+      const name = g?.name ?? g?.title ?? g?.groupName ?? g?.displayName;
+      if (id != null && name) map[String(id)] = String(name);
+    }
+    return map;
+  }
+
+  async function loadWorkingGroups() {
+    // çoklu deneme: ilk başarılı sonucu map’leriz
+    for (const url of WG_URLS) {
+      try {
+        const res = await axios.get(url);
+        const arr = extractArray(res?.data);
+        if (arr.length) {
+          const map = buildWgMap(arr);
+          setWgMap(map);
+          setWgReady(true);
+          return;
+        }
+      } catch (_) {
+        // sıradaki URL
+      }
+    }
+    // hiçbiri olmadıysa yine de ready işaretleyelim
+    setWgMap({});
+    setWgReady(true);
+  }
+
+  useEffect(() => {
+    // açılışta tüm çalışma gruplarını topla
+    loadWorkingGroups();
+  }, []);
+
   useEffect(() => {
     fetchLawyers();
     fetchCities();
@@ -80,16 +136,29 @@ function LawyerList() {
     if (e.target.classList.contains("modal-overlay")) closeEditModal();
   };
 
+  // 🔹 ID -> Ad çözümü
+  const groupNameFor = (l) => {
+    const inline =
+      l?.workingGroup?.name ||
+      l?.workingGroupName ||
+      l?.workingGroupTitle;
+    if (inline) return inline;
+
+    const id = l?.workingGroupId ?? l?.workingGroupID ?? l?.groupId;
+    if (id == null) return "-";
+
+    return wgMap[String(id)] ?? (wgReady ? "-" : "Yükleniyor…");
+  };
+
   return {
     /* JSX */
   } && (
     <div className="container">
       <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
         Avukat Listesi
-        
       </h2>
 
-      {/* Filtre Barı – CaseListPage ile aynı stil */}
+      {/* Filtre Barı */}
       <div className="filters">
         <div className="filter-item">
           <label>Şehir</label>
@@ -149,7 +218,7 @@ function LawyerList() {
                   (query.sortOrder === "asc" ? "▲" : query.sortOrder === "desc" ? "▼" : "")}
               </th>
               <th>Şehir</th>
-              <th>E‑posta</th>
+              <th>E-posta</th>
               <th>Telefon</th>
               <th>Baro No</th>
               <th>Pro Bono</th>
@@ -190,7 +259,8 @@ function LawyerList() {
                         <strong>Eğitim:</strong> {l.education || "-"} <br />
                         <strong>Toplam Dava:</strong> {l.totalCasesHandled || 0} <br />
                         <strong>Diller:</strong> {l.languagesSpoken || "-"} <br />
-                        <strong>Pro Bono:</strong> {l.availableForProBono ? "Evet" : "Hayır"}
+                        <strong>Pro Bono:</strong> {l.availableForProBono ? "Evet" : "Hayır"} <br />
+                        <strong>Çalışma Grubu:</strong> {groupNameFor(l)}
                       </div>
                     </td>
                   </tr>

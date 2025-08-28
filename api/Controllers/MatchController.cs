@@ -1,10 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using dava_avukat_eslestirme_asistani.DTOs.Match;
 using dava_avukat_eslestirme_asistani.Services;
 using System.Globalization;
 using ClosedXML.Excel;
 using System.Data;
 using Microsoft.Data.SqlClient;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.IO;
+using System;
 
 namespace dava_avukat_eslestirme_asistani.Controllers
 {
@@ -26,11 +31,19 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             _cq = cq; _llm = llm; _cfg = cfg;
         }
 
-        // =========================
-        // 1) ÖNERİ + METRİK
-        // =========================
+        /// <summary>
+        /// Dava için en uygun avukatları önerir
+        /// </summary>
+        /// <param name="req">Eşleştirme isteği parametreleri</param>
+        /// <returns>Eşleştirilen avukat listesi ve (varsa) metrikler</returns>
+        /// <response code="200">Başarılı eşleştirme sonucu</response>
+        /// <response code="400">Geçersiz istek</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("suggest")]
-        public async Task<IActionResult> Suggest([FromBody] MatchRequest req, CancellationToken ct)
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> Suggest([FromBody] MatchRequest req, CancellationToken ct = default)
         {
             var requestedTopK = req.TopK <= 0 ? 5 : req.TopK;
 
