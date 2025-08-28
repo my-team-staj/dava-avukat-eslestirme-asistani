@@ -6,32 +6,53 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS policy (React için tüm portlara izin)
+// (İsteğe bağlı) başlangıçta label'ları yükle – log'a yazar
+var labelsPath = builder.Configuration["Metrics:LabelsPath"];
+var sheetName = builder.Configuration["Metrics:Sheet"] ?? "Labels";
+if (string.IsNullOrWhiteSpace(labelsPath) || !File.Exists(labelsPath))
+{
+    Console.WriteLine($"[Metrics] Labels dosyası bulunamadı: {labelsPath}");
+}
+else
+{
+    try
+    {
+        dava_avukat_eslestirme_asistani.Data.LabelStore.LoadFromExcel(labelsPath!, sheetName);
+        Console.WriteLine($"[Metrics] Loaded labels: {dava_avukat_eslestirme_asistani.Data.LabelStore.All.Count} cases");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Metrics] Load error: {ex.Message}");
+    }
+}
+
+// CORS (geliştirme için serbest)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader());
+    options.AddPolicy("AllowAll", p =>
+        p.AllowAnyOrigin()
+         .AllowAnyMethod()
+         .AllowAnyHeader());
 });
 
-// Controller, Auth, Swagger, Mapper, Services, DB Context
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<ICaseService, CaseService>();
 builder.Services.AddScoped<ILawyerService, LawyerService>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+// Bağlantı dizesi adınız neyse onu verin. Örn: "DefaultConnection" / "sqlConnection"
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("sqlConnection")));
-builder.Services.AddScoped<dava_avukat_eslestirme_asistani.Services.CandidateQueryService>();
-builder.Services.AddHttpClient<dava_avukat_eslestirme_asistani.Services.LlmMatchService>();
+
+builder.Services.AddScoped<CandidateQueryService>();
+builder.Services.AddHttpClient<LlmMatchService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Sadece 1 tane ve en üstte CORS!
 app.UseCors("AllowAll");
 
 if (app.Environment.IsDevelopment())
