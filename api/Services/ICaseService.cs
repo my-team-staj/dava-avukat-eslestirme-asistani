@@ -9,8 +9,10 @@ namespace dava_avukat_eslestirme_asistani.Services
         Task<Case?> GetCaseByIdAsync(int id);
         Task<PaginatedResponse<CaseDto>> GetCasesAsync(CaseQueryParameters parameters);
 
-        Task<Case> UpdateCaseAsync(int id, CaseUpdateDto caseDto);
+        // NULLABLE olacak şekilde düzelttik:
+        Task<Case?> UpdateCaseAsync(int id, CaseUpdateDto caseDto);
 
-
+        // SOFT DELETE eklendi:
+        Task<bool> DeleteCaseAsync(int id);
     }
 }

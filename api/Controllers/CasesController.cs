@@ -50,15 +50,26 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             var result = await _caseService.GetCasesAsync(parameters);
             return Ok(result);
         }
-        
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCase(int id, [FromBody] CaseUpdateDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var updated = await _caseService.UpdateCaseAsync(id, dto);
             if (updated is null) return NotFound();
 
-            return Ok(updated); // ya da NoContent() istersen
+            return Ok(updated); // dilersen NoContent() olarak değiştirebilirsin
         }
 
+        // SOFT DELETE
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCase(int id)
+        {
+            var ok = await _caseService.DeleteCaseAsync(id);
+            if (!ok) return NotFound();
+            return NoContent();
+        }
     }
 }

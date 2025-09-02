@@ -34,11 +34,6 @@ namespace dava_avukat_eslestirme_asistani.Controllers
         /// <summary>
         /// Dava için en uygun avukatları önerir
         /// </summary>
-        /// <param name="req">Eşleştirme isteği parametreleri</param>
-        /// <returns>Eşleştirilen avukat listesi ve (varsa) metrikler</returns>
-        /// <response code="200">Başarılı eşleştirme sonucu</response>
-        /// <response code="400">Geçersiz istek</response>
-        /// <response code="500">Sunucu hatası</response>
         [HttpPost("suggest")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
@@ -209,7 +204,144 @@ VALUES (@CaseId, @LawyerId, SYSUTCDATETIME(), @ChosenBy);";
         }
 
         // =========================
-        // 4) LABELS YENİDEN YÜKLE (opsiyonel)
+        // 4) KAYDI GÜNCELLE
+        // =========================
+        public sealed class UpdateChoiceRequest
+        {
+            public int LawyerId { get; set; }
+            public string? ChosenBy { get; set; }
+            public bool RefreshChosenAt { get; set; } = true; // true ise ChosenAt = şimdi
+        }
+
+        /// <summary>
+        /// Var olan bir CaseLawyerChoice kaydının avukatını/ChosenBy alanını günceller.
+        /// </summary>
+        [HttpPut("choices/{id:int}")]
+        public async Task<IActionResult> UpdateChoice([FromRoute] int id, [FromBody] UpdateChoiceRequest req)
+        {
+            if (id <= 0 || req.LawyerId <= 0) return BadRequest("Geçersiz parametre.");
+
+            var cs = GetConnectionString(_cfg);
+            if (string.IsNullOrWhiteSpace(cs))
+                return Problem("Veritabanı bağlantı dizesi bulunamadı (ConnectionStrings).");
+
+            await EnsureChoiceTableAsync(cs);
+
+            // 1) Kaydın CaseId'sini al
+            const string getSql = @"SELECT TOP 1 Id, CaseId, LawyerId FROM dbo.CaseLawyerChoice WHERE Id = @Id;";
+            int? caseId = null;
+
+            using (var con = new SqlConnection(cs))
+            {
+                await con.OpenAsync();
+                using var cmd = new SqlCommand(getSql, con);
+                cmd.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+
+                using var rd = await cmd.ExecuteReaderAsync();
+                if (await rd.ReadAsync())
+                {
+                    caseId = rd.GetInt32(1);
+                }
+            }
+
+            if (caseId is null) return NotFound("Kayıt bulunamadı.");
+
+            // 2) Yeni LawyerId bu davanın aday havuzunda mı?
+            var (caseSum, candidates) = await _cq.BuildAsync(caseId.Value, take: 50);
+            if (caseSum == null) return NotFound("Dava bulunamadı.");
+            if (!candidates.Any(c => c.Id == req.LawyerId))
+                return BadRequest("Gönderilen LawyerId bu davanın aday havuzunda değil.");
+
+            // 3) Güncelle
+            var updateSql = req.RefreshChosenAt
+                ? @"UPDATE dbo.CaseLawyerChoice
+                    SET LawyerId = @LawyerId,
+                        ChosenBy = @ChosenBy,
+                        ChosenAt = SYSUTCDATETIME()
+                  WHERE Id = @Id;"
+                : @"UPDATE dbo.CaseLawyerChoice
+                    SET LawyerId = @LawyerId,
+                        ChosenBy = @ChosenBy
+                  WHERE Id = @Id;";
+
+            using (var con2 = new SqlConnection(cs))
+            {
+                await con2.OpenAsync();
+                using var up = new SqlCommand(updateSql, con2);
+                up.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+                up.Parameters.Add(new SqlParameter("@LawyerId", SqlDbType.Int) { Value = req.LawyerId });
+                up.Parameters.Add(new SqlParameter("@ChosenBy", SqlDbType.NVarChar, 100)
+                {
+                    Value = (object?)req.ChosenBy ?? DBNull.Value
+                });
+
+                var rows = await up.ExecuteNonQueryAsync();
+                if (rows == 0) return NotFound("Güncellenecek kayıt bulunamadı.");
+            }
+
+            return NoContent();
+        }
+
+        // =========================
+        // 5) KAYDI SİL (tekil id)
+        // =========================
+        /// <summary>
+        /// Tek bir eşleşme kaydını siler.
+        /// </summary>
+        [HttpDelete("choices/{id:int}")]
+        public async Task<IActionResult> DeleteChoice([FromRoute] int id)
+        {
+            if (id <= 0) return BadRequest("Geçersiz id.");
+
+            var cs = GetConnectionString(_cfg);
+            if (string.IsNullOrWhiteSpace(cs))
+                return Problem("Veritabanı bağlantı dizesi bulunamadı (ConnectionStrings).");
+
+            await EnsureChoiceTableAsync(cs);
+
+            const string sql = "DELETE FROM dbo.CaseLawyerChoice WHERE Id = @Id;";
+            using var con = new SqlConnection(cs);
+            await con.OpenAsync();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0) return NotFound("Kayıt bulunamadı.");
+
+            return NoContent();
+        }
+
+        // =========================
+        // 6) KAYDI SİL (caseId bazlı)
+        // =========================
+        /// <summary>
+        /// Verilen davaya ait (varsa) eşleşmeyi siler.
+        /// </summary>
+        [HttpDelete("choices/by-case/{caseId:int}")]
+        public async Task<IActionResult> DeleteChoiceByCase([FromRoute] int caseId)
+        {
+            if (caseId <= 0) return BadRequest("Geçersiz caseId.");
+
+            var cs = GetConnectionString(_cfg);
+            if (string.IsNullOrWhiteSpace(cs))
+                return Problem("Veritabanı bağlantı dizesi bulunamadı (ConnectionStrings).");
+
+            await EnsureChoiceTableAsync(cs);
+
+            const string sql = "DELETE FROM dbo.CaseLawyerChoice WHERE CaseId = @CaseId;";
+            using var con = new SqlConnection(cs);
+            await con.OpenAsync();
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.Add(new SqlParameter("@CaseId", SqlDbType.Int) { Value = caseId });
+
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows == 0) return NotFound("Kayıt bulunamadı.");
+
+            return NoContent();
+        }
+
+        // =========================
+        // 7) LABELS YENİDEN YÜKLE (opsiyonel)
         // =========================
         [HttpPost("_reload_labels")]
         public IActionResult ReloadLabels()
