@@ -28,8 +28,7 @@ namespace dava_avukat_eslestirme_asistani.Controllers
         [HttpGet]
         public async Task<IActionResult> GetLawyers([FromQuery] LawyerQueryParameters query)
         {
-            // Deconstruction yerine result objesi kullanıyoruz
-            var result = await _lawyerService.GetLawyersAsync(query); 
+            var result = await _lawyerService.GetLawyersAsync(query);
 
             var response = new PaginatedResponse<LawyerDto>
             {
@@ -42,6 +41,7 @@ namespace dava_avukat_eslestirme_asistani.Controllers
 
             return Ok(response);
         }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateLawyer(int id, [FromBody] LawyerUpdateDto dto)
         {
@@ -59,7 +59,6 @@ namespace dava_avukat_eslestirme_asistani.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
 
         [HttpPost]
         public async Task<IActionResult> CreateLawyer([FromBody] LawyerCreateDto lawyerDto)
@@ -86,6 +85,17 @@ namespace dava_avukat_eslestirme_asistani.Controllers
                 return NotFound();
             }
             return Ok(lawyer);
+        }
+
+        /// <summary>
+        /// Soft delete: IsActive=false yapar.
+        /// </summary>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteLawyer(int id)
+        {
+            var ok = await _lawyerService.SoftDeleteLawyerAsync(id);
+            if (!ok) return NotFound(new { message = "Avukat bulunamadı." });
+            return NoContent();
         }
     }
 }

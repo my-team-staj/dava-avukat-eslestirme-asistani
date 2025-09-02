@@ -86,16 +86,32 @@ namespace dava_avukat_eslestirme_asistani.Services
                 Items = caseDtos
             };
         }
+
+        // NULLABLE dönüş (controller NotFound dönebilsin)
         public async Task<Case?> UpdateCaseAsync(int id, CaseUpdateDto dto)
         {
             var entity = await _caseRepository.GetByIdAsync(id);
             if (entity is null) return null;
 
-            // Tüm alanları güncelle (PUT mantığı)
+            // PUT mantığı: tüm alanları güncelle
             _mapper.Map(dto, entity);
 
             await _caseRepository.SaveAsync();
             return entity;
+        }
+
+        // SOFT DELETE
+        public async Task<bool> DeleteCaseAsync(int id)
+        {
+            var entity = await _caseRepository.GetByIdAsync(id);
+            if (entity is null) return false;
+
+            if (!entity.IsActive)
+                return true; // zaten silik kabul edelim
+
+            entity.IsActive = false;
+            await _caseRepository.SaveAsync();
+            return true;
         }
     }
 }

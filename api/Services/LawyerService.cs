@@ -44,26 +44,16 @@ namespace dava_avukat_eslestirme_asistani.Services
 
         public async Task<LawyerDto> UpdateLawyerAsync(int id, LawyerUpdateDto dto)
         {
-            // 1️⃣ ID’ye göre mevcut avukatı bul
             var lawyer = await _lawyerRepository.GetByIdAsync(id);
             if (lawyer == null)
                 throw new KeyNotFoundException("Avukat bulunamadı");
 
-            // 2️⃣ Body’de ID kontrolü (opsiyonel: gönderildiyse aynı mı?)
-            // Eğer body’de LawyerUpdateDto’da Id varsa:
-            // if (dto.Id.HasValue && dto.Id.Value != id) 
-            //     throw new ArgumentException("Güncellenecek avukat ID’si route parametresi ile aynı olmalı.");
-
-            // 3️⃣ DTO'dan entity’e mapping uygula
             _mapper.Map(dto, lawyer);
-
-            // 4️⃣ Güncelle ve kaydet
             _lawyerRepository.Update(lawyer);
             await _lawyerRepository.SaveAsync();
 
             return _mapper.Map<LawyerDto>(lawyer);
         }
-
 
         /// <summary>
         /// Filtreleme, sıralama ve sayfalama ile avukat listesi döner.
@@ -111,6 +101,26 @@ namespace dava_avukat_eslestirme_asistani.Services
                 .ToListAsync();
 
             return (items, totalItems, totalPages);
+        }
+
+        /// <summary>
+        /// Soft delete: IsActive=false yapar. Yoksa false döner.
+        /// </summary>
+        public async Task<bool> SoftDeleteLawyerAsync(int id)
+        {
+            var entity = await _lawyerRepository.GetByIdAsync(id);
+            if (entity is null) return false;
+
+            if (!entity.IsActive)
+            {
+                // Zaten soft-deleted; idempotent olarak başarı kabul edelim.
+                return true;
+            }
+
+            entity.IsActive = false;
+            _lawyerRepository.Update(entity);
+            await _lawyerRepository.SaveAsync();
+            return true;
         }
     }
 }
