@@ -95,7 +95,6 @@ export default function CaseListPage() {
     <div className="container">
       <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
         Dava Listesi
-       
       </h2>
 
       {/* Filtreler */}
@@ -192,53 +191,56 @@ export default function CaseListPage() {
             </tr>
           </thead>
           <tbody>
-            {cases.map((c) => (
-              <React.Fragment key={c.id}>
-                <tr>
-                  <td>{c.title}</td>
-                  <td>{c.city}</td>
-                  <td>{c.urgencyLevel}</td>
-                  <td>{c.workingGroupName || "-"}</td>
-                  <td>{c.requiresProBono ? "Evet" : "Hayır"}</td>
-                  <td>{c.filedDate ? new Date(c.filedDate).toLocaleDateString() : "-"}</td>
-                  <td>
-                    <button onClick={() => toggleExpand(c.id)}>
-                      {expandedRows.includes(c.id) ? "Kapat" : "Detay Aç"}
-                    </button>{" "}
-                    
-
-                    <button 
-                    
-                    style={{ backgroundColor: "#1976d2", color: "#fff" }}
-                    onClick={() => handleEditClick(c.id)}
-                    
-                    >
-                      Güncelle
-                    
-                    </button>
-                  </td>
-                
-                </tr>
-
-                {expandedRows.includes(c.id) && (
+            {cases.map((c) => {
+              const isOpen = expandedRows.includes(c.id);
+              return (
+                <React.Fragment key={c.id}>
                   <tr>
-                    <td colSpan={8}>
-                      <div style={{ background: "#f2f5fa", padding: 12, borderRadius: 10 }}>
-                        <strong>Açıklama:</strong> {c.description || "-"} <br />
-                        <strong>Tecrübe Seviyesi:</strong> {c.requiredExperienceLevel || "-"} <br />
-                        <strong>Dil:</strong> {c.language || "-"} <br />
-                        <strong>Tahmini Süre:</strong>{" "}
-                        {typeof c.estimatedDurationInDays === "number" && c.estimatedDurationInDays > 0
-                          ? `${c.estimatedDurationInDays} gün`
-                          : "-"}
-                        <br />
-                        <strong>Aktiflik:</strong> {c.isActive ? "Aktif" : "Pasif"}
-                      </div>
+                    <td>{c.title}</td>
+                    <td>{c.city}</td>
+                    <td>{c.urgencyLevel}</td>
+                    <td>{c.workingGroupName || "-"}</td>
+                    <td>{c.requiresProBono ? "Evet" : "Hayır"}</td>
+                    <td>{c.filedDate ? new Date(c.filedDate).toLocaleDateString() : "-"}</td>
+                    <td className="actions-cell">
+                      <button
+                        className="btn-details"
+                        onClick={() => toggleExpand(c.id)}
+                        aria-expanded={isOpen}
+                        aria-label={isOpen ? "Detayı kapat" : "Detay aç"}
+                      >
+                        {isOpen ? "Detayı Kapat" : "Detay Aç"}
+                      </button>{" "}
+                      <button
+                        className="btn-update"
+                        onClick={() => handleEditClick(c.id)}
+                        aria-label="Davayı güncelle"
+                      >
+                        Güncelle
+                      </button>
                     </td>
                   </tr>
-                )}
-              </React.Fragment>
-            ))}
+
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={8}>
+                        <div style={{ background: "#f2f5fa", padding: 12, borderRadius: 10 }}>
+                          <strong>Açıklama:</strong> {c.description || "-"} <br />
+                          <strong>Tecrübe Seviyesi:</strong> {c.requiredExperienceLevel || "-"} <br />
+                          <strong>Dil:</strong> {c.language || "-"} <br />
+                          <strong>Tahmini Süre:</strong>{" "}
+                          {typeof c.estimatedDurationInDays === "number" && c.estimatedDurationInDays > 0
+                            ? `${c.estimatedDurationInDays} gün`
+                            : "-"}
+                          <br />
+                          <strong>Aktiflik:</strong> {c.isActive ? "Aktif" : "Pasif"}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       )}

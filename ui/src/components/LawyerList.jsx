@@ -54,7 +54,6 @@ function LawyerList() {
   }
 
   async function loadWorkingGroups() {
-    // çoklu deneme: ilk başarılı sonucu map’leriz
     for (const url of WG_URLS) {
       try {
         const res = await axios.get(url);
@@ -69,13 +68,11 @@ function LawyerList() {
         // sıradaki URL
       }
     }
-    // hiçbiri olmadıysa yine de ready işaretleyelim
     setWgMap({});
     setWgReady(true);
   }
 
   useEffect(() => {
-    // açılışta tüm çalışma gruplarını topla
     loadWorkingGroups();
   }, []);
 
@@ -150,9 +147,7 @@ function LawyerList() {
     return wgMap[String(id)] ?? (wgReady ? "-" : "Yükleniyor…");
   };
 
-  return {
-    /* JSX */
-  } && (
+  return (
     <div className="container">
       <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
         Avukat Listesi
@@ -228,45 +223,54 @@ function LawyerList() {
             </tr>
           </thead>
           <tbody>
-            {lawyers.map((l) => (
-              <React.Fragment key={l.id}>
-                <tr>
-                  <td>{l.name}</td>
-                  <td>{l.city}</td>
-                  <td>{l.email}</td>
-                  <td>{l.phone}</td>
-                  <td>{l.baroNumber}</td>
-                  <td>{l.availableForProBono ? "Evet" : "Hayır"}</td>
-                  <td>{l.rating}</td>
-                  <td>{l.isActive ? "Aktif" : "Pasif"}</td>
-                  <td>
-                    <button onClick={() => toggleExpand(l.id)}>
-                      {expandedRows.includes(l.id) ? "Kapat" : "Detay Aç"}
-                    </button>{" "}
-                    <button
-                      onClick={() => openEditModal(l.id)}
-                      style={{ backgroundColor: "#1976d2", color: "#fff" }}
-                    >
-                      Güncelle
-                    </button>
-                  </td>
-                </tr>
-
-                {expandedRows.includes(l.id) && (
+            {lawyers.map((l) => {
+              const isOpen = expandedRows.includes(l.id);
+              return (
+                <React.Fragment key={l.id}>
                   <tr>
-                    <td colSpan="9">
-                      <div style={{ background: "#f2f5fa", padding: "12px", borderRadius: "10px" }}>
-                        <strong>Eğitim:</strong> {l.education || "-"} <br />
-                        <strong>Toplam Dava:</strong> {l.totalCasesHandled || 0} <br />
-                        <strong>Diller:</strong> {l.languagesSpoken || "-"} <br />
-                        <strong>Pro Bono:</strong> {l.availableForProBono ? "Evet" : "Hayır"} <br />
-                        <strong>Çalışma Grubu:</strong> {groupNameFor(l)}
-                      </div>
+                    <td>{l.name}</td>
+                    <td>{l.city}</td>
+                    <td>{l.email}</td>
+                    <td>{l.phone}</td>
+                    <td>{l.baroNumber}</td>
+                    <td>{l.availableForProBono ? "Evet" : "Hayır"}</td>
+                    <td>{l.rating}</td>
+                    <td>{l.isActive ? "Aktif" : "Pasif"}</td>
+                    <td className="actions-cell">
+                      <button
+                        className="btn-details"
+                        onClick={() => toggleExpand(l.id)}
+                        aria-expanded={isOpen}
+                        aria-label={isOpen ? "Detayı kapat" : "Detay aç"}
+                      >
+                        {isOpen ? "Detayı Kapat" : "Detay Aç"}
+                      </button>{" "}
+                      <button
+                        className="btn-update"
+                        onClick={() => openEditModal(l.id)}
+                        aria-label="Avukatı güncelle"
+                      >
+                        Güncelle
+                      </button>
                     </td>
                   </tr>
-                )}
-              </React.Fragment>
-            ))}
+
+                  {isOpen && (
+                    <tr>
+                      <td colSpan="9">
+                        <div style={{ background: "#f2f5fa", padding: "12px", borderRadius: "10px" }}>
+                          <strong>Eğitim:</strong> {l.education || "-"} <br />
+                          <strong>Toplam Dava:</strong> {l.totalCasesHandled || 0} <br />
+                          <strong>Diller:</strong> {l.languagesSpoken || "-"} <br />
+                          <strong>Pro Bono:</strong> {l.availableForProBono ? "Evet" : "Hayır"} <br />
+                          <strong>Çalışma Grubu:</strong> {groupNameFor(l)}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       )}
