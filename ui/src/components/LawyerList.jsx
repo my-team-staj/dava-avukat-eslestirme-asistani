@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "../App.css";
 import LawyerEditForm from "./LawyerEditForm";
+import { toast } from "react-toastify";
+import ConfirmDialog from "./ConfirmDialog";
 
 const API_BASE = "https://localhost:60227/api";
 
@@ -16,18 +18,19 @@ function LawyerList() {
     page: 1,
     pageSize: 5,
     city: "",
-    isActive: "",
+    isActive: "true",
     availableForProBono: "",
     sortBy: "name",
     sortOrder: "asc",
   });
   const [totalPages, setTotalPages] = useState(1);
 
-  // 🔹 Çalışma grubu ID->Ad sözlüğü
   const [wgMap, setWgMap] = useState({});
   const [wgReady, setWgReady] = useState(false);
 
-  // --- helpers ---
+  // ⬇️ Silme için modal state
+  const [confirm, setConfirm] = useState({ open: false, id: null });
+
   const WG_URLS = [
     `${API_BASE}/working-groups`,
     `${API_BASE}/workinggroups`,
@@ -42,7 +45,6 @@ function LawyerList() {
     if (Array.isArray(payload.data)) return payload.data;
     return [];
   }
-
   function buildWgMap(arr) {
     const map = {};
     for (const g of arr) {
@@ -52,7 +54,6 @@ function LawyerList() {
     }
     return map;
   }
-
   async function loadWorkingGroups() {
     for (const url of WG_URLS) {
       try {
@@ -64,18 +65,13 @@ function LawyerList() {
           setWgReady(true);
           return;
         }
-      } catch (_) {
-        // sıradaki URL
-      }
+      } catch (_) {}
     }
     setWgMap({});
     setWgReady(true);
   }
 
-  useEffect(() => {
-    loadWorkingGroups();
-  }, []);
-
+  useEffect(() => { loadWorkingGroups(); }, []);
   useEffect(() => {
     fetchLawyers();
     fetchCities();
@@ -90,6 +86,8 @@ function LawyerList() {
       setTotalPages(res.data.totalPages || 1);
     } catch (err) {
       console.error("Avukat verileri alınamadı:", err);
+      setLawyers([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -133,7 +131,6 @@ function LawyerList() {
     if (e.target.classList.contains("modal-overlay")) closeEditModal();
   };
 
-  // 🔹 ID -> Ad çözümü
   const groupNameFor = (l) => {
     const inline =
       l?.workingGroup?.name ||
@@ -145,6 +142,21 @@ function LawyerList() {
     if (id == null) return "-";
 
     return wgMap[String(id)] ?? (wgReady ? "-" : "Yükleniyor…");
+  };
+
+  // ⬇️ Silme — modern onay modalı
+  const askDelete = (id) => setConfirm({ open: true, id });
+  const doDelete = async () => {
+    const id = confirm.id;
+    setConfirm({ open: false, id: null });
+    try {
+      await axios.delete(`${API_BASE}/lawyers/${id}`);
+      toast.success("Avukat silindi");
+      fetchLawyers();
+    } catch (e) {
+      console.error(e);
+      toast.error("Avukat silinirken bir hata oluştu");
+    }
   };
 
   return (
@@ -251,6 +263,13 @@ function LawyerList() {
                         aria-label="Avukatı güncelle"
                       >
                         Güncelle
+                      </button>{" "}
+                      <button
+                        className="btn-delete"
+                        onClick={() => askDelete(l.id)}
+                        aria-label="Avukatı sil"
+                      >
+                        Sil
                       </button>
                     </td>
                   </tr>
@@ -304,6 +323,17 @@ function LawyerList() {
           </div>
         </div>
       )}
+
+      {/* ✅ Silme Onayı Modalı */}
+      <ConfirmDialog
+        open={confirm.open}
+        title="Bu avukatı silmek istiyor musun?"
+        message="Bu işlem geri alınamaz. Avukat kaydı kalıcı olarak silinecek."
+        confirmText="Sil"
+        cancelText="Vazgeç"
+        onConfirm={doDelete}
+        onCancel={() => setConfirm({ open: false, id: null })}
+      />
     </div>
   );
 }

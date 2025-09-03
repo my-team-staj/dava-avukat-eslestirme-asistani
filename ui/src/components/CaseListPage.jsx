@@ -2,7 +2,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../App.css";
-import CaseUpdateModal from "./CaseUpdateModal"; // 👈 düzeltildi
+import { toast } from "react-toastify";
+import CaseUpdateModal from "./CaseUpdateModal";
+import ConfirmDialog from "./ConfirmDialog";
 
 const API_BASE = "https://localhost:60227/api";
 
@@ -20,7 +22,7 @@ export default function CaseListPage() {
     city: "",
     language: "",
     urgencyLevel: "",
-    isActive: "",
+    isActive: "true",
     requiresProBono: "",
     sortBy: "filedDate",
     sortOrder: "desc",
@@ -28,6 +30,9 @@ export default function CaseListPage() {
 
   const [selectedCase, setSelectedCase] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // ⬇️ Silme için modal state
+  const [confirm, setConfirm] = useState({ open: false, id: null });
 
   useEffect(() => {
     fetchCases();
@@ -64,7 +69,6 @@ export default function CaseListPage() {
   }
 
   const handlePageChange = (page) => setQuery(prev => ({ ...prev, page }));
-
   const toggleExpand = (id) =>
     setExpandedRows(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -88,6 +92,21 @@ export default function CaseListPage() {
       setIsModalOpen(true);
     } catch (error) {
       console.error("Dava bilgisi alınamadı:", error);
+    }
+  };
+
+  // ⬇️ Silme — modern onay modalı
+  const askDelete = (id) => setConfirm({ open: true, id });
+  const doDelete = async () => {
+    const id = confirm.id;
+    setConfirm({ open: false, id: null });
+    try {
+      await axios.delete(`${API_BASE}/cases/${id}`);
+      toast.success("Dava silindi");
+      fetchCases();
+    } catch (err) {
+      console.error(err);
+      toast.error("Dava silinirken bir hata oluştu");
     }
   };
 
@@ -217,6 +236,13 @@ export default function CaseListPage() {
                         aria-label="Davayı güncelle"
                       >
                         Güncelle
+                      </button>{" "}
+                      <button
+                        className="btn-delete"
+                        onClick={() => askDelete(c.id)}
+                        aria-label="Davayı sil"
+                      >
+                        Sil
                       </button>
                     </td>
                   </tr>
@@ -266,6 +292,17 @@ export default function CaseListPage() {
           onUpdated={fetchCases}
         />
       )}
+
+      {/* ✅ Silme Onayı Modalı */}
+      <ConfirmDialog
+        open={confirm.open}
+        title="Bu davayı silmek istiyor musun?"
+        message="Bu işlem geri alınamaz. Dava kalıcı olarak silinecek."
+        confirmText="Sil"
+        cancelText="Vazgeç"
+        onConfirm={doDelete}
+        onCancel={() => setConfirm({ open: false, id: null })}
+      />
     </div>
   );
 }
