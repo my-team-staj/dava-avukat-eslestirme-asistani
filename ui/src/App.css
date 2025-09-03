@@ -1687,6 +1687,8 @@ h2 {
   background: #e9ecef;
   outline: none;
   -webkit-appearance: none;
+  -moz-appearance: none;    /* Firefox */
+  appearance: none;         /* Standart */
 }
 
 .score-slider::-webkit-slider-thumb {
@@ -2740,5 +2742,219 @@ h2 {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
 }
 
+/* İşlem hücresi hizalama */
+.actions-cell {
+  white-space: nowrap;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Var olan butonlara benzer bir 'Sil' butonu */
+.btn-delete {
+  background: #ff4d4f;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-delete:hover {
+  filter: brightness(0.95);
+}
 
 
+/* Onay modalı küçük ekler */
+.confirm-card .modal-body {
+  padding: 8px 0 4px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-secondary {
+  background: #eef2ff;
+  color: #334155;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary:hover { filter: brightness(0.97); }
+
+.btn-danger {
+  background: #ef4444; /* kırmızı */
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-danger:hover { filter: brightness(0.95); }
+
+/* Ufak giriş animasyonu (isteğe bağlı) */
+.modal-overlay .confirm-card {
+  animation: popIn .16s ease-out;
+}
+@keyframes popIn {
+  from { transform: scale(.96); opacity: .8; }
+  to   { transform: scale(1);   opacity: 1;  }
+}
+
+/* === ConfirmDialog uyarı kartı === */
+.warning-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #fff7ed;            /* sıcak uyarı tonu (amber) */
+  border: 1px solid #fed7aa;      /* soft sınır */
+  border-left: 6px solid #f59e0b; /* vurgu çizgisi */
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.warning-icon {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f59e0b;            /* amber */
+  color: #fff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25);
+}
+
+.warning-content { line-height: 1.45; }
+.warning-title {
+  font-weight: 700;
+  color: #7c2d12;                  /* koyu amber metin */
+  margin-bottom: 4px;
+}
+.warning-text {
+  color: #7c2d12;
+  opacity: 0.9;
+}
+
+/* Var olan buton stillerinle uyumlu kalması için min tweak */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-secondary {
+  background: #eef2ff;
+  color: #334155;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-secondary:hover { filter: brightness(0.97); }
+
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-danger:hover { filter: brightness(0.95); }
+
+/* ==== ConfirmDialog: büyük & ortalanmış butonlar ==== */
+.modal-card.confirm-card { 
+  max-width: 640px; /* biraz genişlik (opsiyonel) */
+}
+
+.confirm-card .modal-actions {
+  display: flex;
+  justify-content: center;   /* ortala */
+  gap: 16px;                 /* buton aralığı */
+  margin-top: 20px;
+}
+
+.confirm-card .btn-secondary,
+.confirm-card .btn-danger {
+  padding: 12px 24px;        /* daha büyük */
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 12px;
+  min-width: 140px;          /* aynı genişlik hissi */
+  box-shadow: 0 2px 10px rgba(16, 24, 40, 0.06);
+}
+
+.confirm-card .btn-secondary { background: #e6e9ff; color: #334155; }
+.confirm-card .btn-secondary:hover { filter: brightness(0.97); }
+
+.confirm-card .btn-danger { background: #ef4444; color: #fff; }
+.confirm-card .btn-danger:hover { filter: brightness(0.95); }
+
+.confirm-card .btn-secondary:active,
+.confirm-card .btn-danger:active {
+  transform: translateY(1px);
+}
+
+/* mobilde butonları alt alta ve tam genişlik yap */
+@media (max-width: 520px) {
+  .confirm-card .modal-actions { 
+    flex-direction: column; 
+  }
+  .confirm-card .btn-secondary,
+  .confirm-card .btn-danger {
+    width: 100%;
+  }
+}
+
+/* === ConfirmDialog beyaz gövde ve footer === */
+.modal-card.confirm-card { 
+  background: #fff;              /* kartın zemini */
+}
+
+.confirm-card .modal-body,
+.confirm-card .modal-actions {
+  background: #fff !important;   /* griyi tamamen bastır */
+}
+
+.confirm-card .modal-body {
+  padding: 16px 24px;            /* iç boşluk */
+}
+
+.confirm-card .modal-actions {
+  border-top: 0;                 /* varsa gri çizgiyi kaldır */
+  padding: 16px 24px 20px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+/* büyük & ortalı butonlar (önceki önerinin aynısı) */
+.confirm-card .modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+.confirm-card .btn-secondary,
+.confirm-card .btn-danger {
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 12px;
+  min-width: 140px;
+}
