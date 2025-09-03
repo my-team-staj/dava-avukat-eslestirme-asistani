@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import LawyerDetailModal from './LawyerDetailModal';
-import apiClient, { API_CONFIG } from '../config/api';
+import apiClient, { API_CONFIG, getChoicesByCaseSafe, postChooseSafe } from '../config/api';
 import "../App.css";
 
 const MatchPage = () => {
@@ -19,21 +19,72 @@ const MatchPage = () => {
 
   // 🔹 ID -> İsim sözlüğü (cache)
   const [lawyerNamesById, setLawyerNamesById] = useState({});
+  // 🔹 Eşleştirme tarihçesi
+  const [history, setHistory] = useState([]);
 
-  useEffect(() => {
-    fetchCases();
-  }, []);
+  // ---- EKLENDİ: Skor normalizasyonu (0–1 aralığına getirir) ----
+  const pickScore01 = (obj) => {
+    const candidates = [
+      obj?.score,
+      obj?.totalScore,
+      obj?.matchScore,
+      obj?.scoreValue,
+      obj?.confidence,
+      obj?.probability,
+    ];
+    let raw = candidates.find(v => v !== undefined && v !== null);
+    if (raw === undefined || raw === null) return 0;
+
+    if (typeof raw === "string") {
+      raw = parseFloat(raw.replace(",", "."));
+    }
+    if (Number.isNaN(raw)) return 0;
+
+    // 0–100 gelmişse 0–1'e çevir
+    if (raw > 1 && raw <= 100) return Math.max(0, Math.min(1, raw / 100));
+    // Doğrudan 0–1 gelmişse
+    if (raw >= 0 && raw <= 1) return raw;
+
+    return Math.max(0, Math.min(1, raw));
+  };
+
+  // ---- EKLENDİ: UI tarafında okunabilir skor ----
+  const readScore = (m) => {
+    const s = typeof m?.score === 'number' ? m.score : pickScore01(m);
+    return Number.isFinite(s) ? s : 0;
+  };
+
+  // ---- EKLENDİ: Tarihçe normalize & sırala ----
+  const normalizeHistoryList = (list, caseId) => {
+    const safe = Array.isArray(list) ? list : [];
+    const normalized = safe.map((x, i) => {
+      const lawyerId = x?.lawyerId ?? x?.lawyerID ?? x?.lawyer?.id ?? x?.lawyer?.lawyerId ?? null;
+      const score = pickScore01(x);
+      const matchedAt = x?.matchedAt || x?.createdAt || x?.date || x?.timestamp || new Date().toISOString();
+      return {
+        id: x?.id ?? x?._id ?? `${caseId}-${lawyerId ?? 'na'}-${i}`,
+        caseId: x?.caseId ?? x?.caseID ?? caseId,
+        lawyerId,
+        score,
+        matchedAt,
+        // raw: x, // (gerekirse debug için aç)
+      };
+    });
+    normalized.sort((a, b) => new Date(b.matchedAt || 0) - new Date(a.matchedAt || 0));
+    return normalized;
+  };
+
+  useEffect(() => { fetchCases(); }, []);
+  useEffect(() => { if (selectedCase) fetchHistory(selectedCase); }, [selectedCase]);
 
   const fetchCases = async () => {
     try {
       const response = await apiClient.get(API_CONFIG.ENDPOINTS.CASES);
-      console.log('API Response:', response.data);
-
       if (response.data && Array.isArray(response.data)) {
         setCases(response.data);
       } else if (response.data && Array.isArray(response.data.data)) {
         setCases(response.data.data);
-      } else if (response.data && response.data.items && Array.isArray(response.data.items)) {
+      } else if (response.data?.items && Array.isArray(response.data.items)) {
         setCases(response.data.items);
       } else {
         console.warn('Unexpected API response structure:', response.data);
@@ -49,8 +100,7 @@ const MatchPage = () => {
   // 🔹 Avukat isimlerini ID'lerden toplayan yardımcı
   const ensureLawyerNames = async (arr) => {
     if (!Array.isArray(arr) || arr.length === 0) return;
-
-    const ids = [...new Set(arr.map(m => m && m.lawyerId).filter(Boolean))];
+    const ids = [...new Set(arr.map(m => (m && (m.lawyerId ?? m.lawyerID ?? m.lawyer?.id))).filter(Boolean))];
     const toFetch = ids.filter(id => !lawyerNamesById[id]);
     if (toFetch.length === 0) return;
 
@@ -71,12 +121,22 @@ const MatchPage = () => {
     }
   };
 
-  const handleMatch = async () => {
-    if (!selectedCase) {
-      toast.warning('Lütfen bir dava seçin');
-      return;
+  // 🔹 Tarihçeyi getir (fallback'li) – EKLENDİ: normalize & isim cache
+  const fetchHistory = async (caseId) => {
+    try {
+      const list = await getChoicesByCaseSafe(caseId);
+      const normalized = normalizeHistoryList(list, caseId);
+      setHistory(normalized);
+      ensureLawyerNames(normalized);
+    } catch (err) {
+      console.error(err);
+      toast.error("Eşleştirme Geçmişi yüklenemedi");
+      setHistory([]);
     }
+  };
 
+  const handleMatch = async () => {
+    if (!selectedCase) { toast.warning('Lütfen bir dava seçin'); return; }
     setLoading(true);
     try {
       const response = await apiClient.post(API_CONFIG.ENDPOINTS.MATCH, {
@@ -84,18 +144,14 @@ const MatchPage = () => {
         topK: topK
       });
 
-      console.log('Match Response:', response.data);
-
-      if (response.data && response.data.candidates && Array.isArray(response.data.candidates)) {
+      if (response.data?.candidates && Array.isArray(response.data.candidates)) {
         setMatches(response.data.candidates);
-        // 🔹 İsimleri yükle
         ensureLawyerNames(response.data.candidates);
-        toast.success(`${response.data.candidates.length} avukat eşleştirildi`);
-      } else if (response.data && Array.isArray(response.data)) {
+        toast.success(`${response.data.candidates.length} avukat önerildi`);
+      } else if (Array.isArray(response.data)) {
         setMatches(response.data);
-        // 🔹 İsimleri yükle
         ensureLawyerNames(response.data);
-        toast.success(`${response.data.length} avukat eşleştirildi`);
+        toast.success(`${response.data.length} avukat önerildi`);
       } else {
         console.warn('Unexpected match response structure:', response.data);
         setMatches([]);
@@ -107,6 +163,41 @@ const MatchPage = () => {
       setMatches([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 🔹 Bir öneriyi gerçekten eşleştir (fallback'li) – EKLENDİ: normalize skor
+  const handleChoose = async (match) => {
+    if (!selectedCase) { toast.warning('Lütfen bir dava seçin'); return; }
+    if (!match?.lawyerId) { toast.warning('Avukat bulunamadı'); return; }
+
+    try {
+      const payload = {
+        caseId: selectedCase,
+        lawyerId: match.lawyerId,
+        score: Number((readScore(match)).toFixed(2)), // normalize edilmiş skor
+      };
+      await postChooseSafe(payload);
+
+      toast.success(`Eşleştirme kaydedildi: ${lawyerName(match.lawyerId)} (${payload.score})`);
+
+      // Optimistic: tarihçeye hemen ekle (normalize formatıyla)
+      setHistory(prev => [
+        {
+          id: `tmp-${Date.now()}`,
+          caseId: payload.caseId,
+          lawyerId: payload.lawyerId,
+          score: payload.score,
+          matchedAt: new Date().toISOString()
+        },
+        ...prev
+      ]);
+
+      // Kesin veri için tekrar çek
+      fetchHistory(selectedCase);
+    } catch (err) {
+      console.error(err);
+      toast.error("Eşleştirme kaydedilemedi");
     }
   };
 
@@ -131,57 +222,34 @@ const MatchPage = () => {
     return { level: 'Düşük', icon: '❌', color: '#dc3545' };
   };
 
-  const handleLawyerDetails = (lawyerId) => {
-    setSelectedLawyerId(lawyerId);
-    setIsModalOpen(true);
-  };
+  const handleLawyerDetails = (lawyerId) => { setSelectedLawyerId(lawyerId); setIsModalOpen(true); };
+  const closeModal = () => { setIsModalOpen(false); setSelectedLawyerId(null); };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedLawyerId(null);
-  };
-
-  // Filtrelenmiş ve sıralanmış sonuçlar
+  // Filtrelenmiş ve sıralanmış sonuçlar — DEĞİŞTİ: readScore kullan
   const filteredAndSortedMatches = Array.isArray(matches) ? matches
-    .filter(match => match && match.score && match.score >= filterScore / 100)
+    .filter(match => match && readScore(match) >= filterScore / 100)
     .sort((a, b) => {
       switch (sortBy) {
+        case 'experience': return (b.experienceYears || 0) - (a.experienceYears || 0);
+        case 'rating':     return (b.rating || 0) - (a.rating || 0);
         case 'score':
-          return b.score - a.score;
-        case 'experience':
-          return (b.experienceYears || 0) - (a.experienceYears || 0);
-        case 'rating':
-          return (b.rating || 0) - (a.rating || 0);
-        default:
-          return b.score - a.score;
+        default:           return (readScore(b)) - (readScore(a));
       }
     }) : [];
 
   const getScoreBreakdown = (match) => {
-    if (!match || typeof match.score !== 'number') {
-      return {
-        baseScore: 0,
-        experienceBonus: 0,
-        ratingBonus: 0,
-        languageBonus: 0,
-        cityBonus: 0,
-        total: 0
-      };
+    const s = readScore(match);
+    if (!match || typeof s !== 'number') {
+      return { baseScore: 0, experienceBonus: 0, ratingBonus: 0, languageBonus: 0, cityBonus: 0, total: 0 };
     }
-
-    const baseScore = match.score;
+    const baseScore = s;
     const experienceBonus = Math.min((match.experienceYears || 0) * 0.02, 0.1);
     const ratingBonus = Math.min((match.rating || 0) * 0.1, 0.1);
-    const languageBonus = 0.05; // Dil uyumu (örnek)
-    const cityBonus = 0.03;      // Şehir uyumu (örnek)
-
+    const languageBonus = 0.05;
+    const cityBonus = 0.03;
     return {
       baseScore: baseScore - experienceBonus - ratingBonus - languageBonus - cityBonus,
-      experienceBonus,
-      ratingBonus,
-      languageBonus,
-      cityBonus,
-      total: baseScore
+      experienceBonus, ratingBonus, languageBonus, cityBonus, total: baseScore
     };
   };
 
@@ -228,12 +296,8 @@ const MatchPage = () => {
             </select>
           </div>
 
-          <button
-            onClick={handleMatch}
-            disabled={!selectedCase || loading}
-            className="match-button"
-          >
-            {loading ? 'Eşleştiriliyor...' : 'Eşleştir'}
+          <button onClick={handleMatch} disabled={!selectedCase || loading} className="match-button">
+            {loading ? 'Eşleştirme Önerileri Yapılıyor' : 'Eşleştirme Önerileri Al'}
           </button>
         </div>
 
@@ -245,100 +309,57 @@ const MatchPage = () => {
             <div className="selected-case-info">
               <h3>Seçilen Dava</h3>
               <div className="case-details">
-                <div className="case-detail-item">
-                  <strong>Başlık:</strong> {Array.isArray(cases) ? cases.find(c => c.id === selectedCase)?.title : ''}
-                </div>
-                <div className="case-detail-item">
-                  <strong>Şehir:</strong> {Array.isArray(cases) ? cases.find(c => c.id === selectedCase)?.city : ''}
-                </div>
-                <div className="case-detail-item">
-                  <strong>Dil:</strong> {Array.isArray(cases) ? cases.find(c => c.id === selectedCase)?.language : ''}
-                </div>
-                <div className="case-detail-item">
-                  <strong>Acil Seviye:</strong> {Array.isArray(cases) ? cases.find(c => c.id === selectedCase)?.urgencyLevel : ''}
-                </div>
-                <div className="case-detail-item">
-                  <strong>Pro Bono:</strong> {Array.isArray(cases) ? (cases.find(c => c.id === selectedCase)?.requiresProBono ? 'Evet' : 'Hayır') : ''}
-                </div>
+                <div className="case-detail-item"><strong>Başlık:</strong> {cases.find(c => c.id === selectedCase)?.title}</div>
+                <div className="case-detail-item"><strong>Şehir:</strong> {cases.find(c => c.id === selectedCase)?.city}</div>
+                <div className="case-detail-item"><strong>Dil:</strong> {cases.find(c => c.id === selectedCase)?.language}</div>
+                <div className="case-detail-item"><strong>Acil Seviye:</strong> {cases.find(c => c.id === selectedCase)?.urgencyLevel}</div>
+                <div className="case-detail-item"><strong>Pro Bono:</strong> {cases.find(c => c.id === selectedCase)?.requiresProBono ? 'Evet' : 'Hayır'}</div>
               </div>
             </div>
 
             {/* Gelişmiş Sonuç Kontrolleri */}
             <div className="results-header">
               <div className="view-controls">
-                <button
-                  className={`view-btn ${viewMode === 'cards' ? 'active' : ''}`}
-                  onClick={() => setViewMode('cards')}
-                >
-                  📋 Kart Görünümü
-                </button>
-                <button
-                  className={`view-btn ${viewMode === 'table' ? 'active' : ''}`}
-                  onClick={() => setViewMode('table')}
-                >
-                  📊 Tablo Görünümü
-                </button>
+                <button className={`view-btn ${viewMode === 'cards' ? 'active' : ''}`} onClick={() => setViewMode('cards')}>📋 Kart Görünümü</button>
+                <button className={`view-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>📊 Tablo Görünümü</button>
               </div>
 
               <div className="filter-controls">
-                <div className="filter-group">
-                  
-                 
-                </div>
-
+                <div className="filter-group"></div>
                 <div className="filter-group">
                   <label htmlFor="filterScore">Min. Skor: {filterScore}%</label>
-                  <input
-                    type="range"
-                    id="filterScore"
-                    min="0"
-                    max="100"
-                    value={filterScore}
-                    onChange={(e) => setFilterScore(Number(e.target.value))}
-                    className="score-slider"
-                  />
+                  <input type="range" id="filterScore" min="0" max="100" value={filterScore}
+                         onChange={(e) => setFilterScore(Number(e.target.value))} className="score-slider" />
                 </div>
               </div>
 
-              <button
-                className="score-breakdown-toggle"
-                onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}
-              >
+              <button className="score-breakdown-toggle" onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}>
                 {showScoreBreakdown ? '🔽 Skor Detayını Gizle' : '🔼 Skor Detayını Göster'}
               </button>
             </div>
 
             {/* Eşleştirme İstatistikleri */}
             <div className="match-stats">
-              <div className="stat-item">
-                <span className="stat-label">Toplam Sonuç:</span>
-                <span className="stat-value">{filteredAndSortedMatches.length}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Ortalama Skor:</span>
+              <div className="stat-item"><span className="stat-label">Toplam Sonuç:</span><span className="stat-value">{filteredAndSortedMatches.length}</span></div>
+              <div className="stat-item"><span className="stat-label">Ortalama Skor:</span>
                 <span className="stat-value">
-                  {filteredAndSortedMatches.length > 0 
-                    ? (filteredAndSortedMatches.reduce((sum, m) => sum + (m.score || 0), 0) / filteredAndSortedMatches.length).toFixed(2)
-                    : '0.00'
-                  }
+                  {filteredAndSortedMatches.length > 0
+                    ? (filteredAndSortedMatches.reduce((s, m) => s + readScore(m), 0) / filteredAndSortedMatches.length).toFixed(2)
+                    : '0.00'}
                 </span>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">En Yüksek Skor:</span>
+              <div className="stat-item"><span className="stat-label">En Yüksek Skor:</span>
                 <span className="stat-value">
-                  {filteredAndSortedMatches.length > 0 
-                    ? Math.max(...filteredAndSortedMatches.map(m => m.score || 0)).toFixed(2)
-                    : '0.00'
-                  }
+                  {filteredAndSortedMatches.length > 0
+                    ? Math.max(...filteredAndSortedMatches.map(m => readScore(m))).toFixed(2)
+                    : '0.00'}
                 </span>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">En Düşük Skor:</span>
+              <div className="stat-item"><span className="stat-label">En Düşük Skor:</span>
                 <span className="stat-value">
-                  {filteredAndSortedMatches.length > 0 
-                    ? Math.min(...filteredAndSortedMatches.map(m => m.score || 0)).toFixed(2)
-                    : '0.00'
-                  }
+                  {filteredAndSortedMatches.length > 0
+                    ? Math.min(...filteredAndSortedMatches.map(m => readScore(m))).toFixed(2)
+                    : '0.00'}
                 </span>
               </div>
             </div>
@@ -346,67 +367,49 @@ const MatchPage = () => {
             {/* Kart Görünümü */}
             {viewMode === 'cards' && (
               <div className="matches-grid">
-                {filteredAndSortedMatches.map((match, index) => (
-                  <div key={match.lawyerId || index} className="match-card">
-                    <div className="match-header">
-                      <span className="match-rank">#{index + 1}</span>
-                      <div className="match-score">
-                        <div className="score-circle">
-                          <span className="score-number">{(match.score || 0).toFixed(2)}</span>
-                          <svg className="score-ring" viewBox="0 0 36 36">
-                            <path
-                              d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831"
-                              fill="none"
-                              stroke="#e5e7eb"
-                              strokeWidth="3"
-                            />
-                            <path
-                              d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831"
-                              fill="none"
-                              stroke={getScoreColor(match.score || 0)}
-                              strokeWidth="3"
-                              strokeDasharray={`((match.score || 0) * 100), 100`}
-                              strokeLinecap="round"
-                            />
-                          </svg>
+                {filteredAndSortedMatches.map((match, index) => {
+                  const s = readScore(match);
+                  return (
+                    <div key={match.lawyerId || index} className="match-card">
+                      <div className="match-header">
+                        <span className="match-rank">#{index + 1}</span>
+                        <div className="match-score">
+                          <div className="score-circle">
+                            <span className="score-number">{s.toFixed(2)}</span>
+                            <svg className="score-ring" viewBox="0 0 36 36">
+                              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none" stroke={getScoreColor(s)} strokeWidth="3"
+                                    strokeDasharray={`${(s * 100).toFixed(0)}, 100`}
+                                    strokeLinecap="round" />
+                            </svg>
+                          </div>
+                          <span className="score-text">{getScoreText(s)}</span>
                         </div>
-                        <span className="score-text">{getScoreText(match.score || 0)}</span>
+                      </div>
+
+                      <div className="match-content">
+                        <h3>Avukat: {lawyerName(match.lawyerId)}</h3>
+                        <p className="match-reason">{match.reason || 'Sebep belirtilmemiş'}</p>
+                        <div className="score-level">
+                          {(() => { const level = getScoreLevel(s);
+                            return <span style={{ color: level.color }}>{level.icon} {level.level}</span>; })()}
+                        </div>
+                      </div>
+
+                      <div className="match-actions">
+                        <button className="btn-details" onClick={() => handleLawyerDetails(match.lawyerId)} disabled={!match.lawyerId}>
+                          Detayları Gör
+                        </button>
+                        <button className="primary-btn" onClick={() => handleChoose(match)}
+                                disabled={!selectedCase || !match.lawyerId} style={{ marginLeft: 8 }}>
+                          Bu Avukatı Eşleştir
+                        </button>
                       </div>
                     </div>
-
-                    <div className="match-content">
-                      {/* 🔹 ID yerine ad göster */}
-                      <h3>Avukat: {lawyerName(match.lawyerId)}</h3>
-                      <p className="match-reason">{match.reason || 'Sebep belirtilmemiş'}</p>
-
-                      {/* Skor Seviyesi */}
-                      <div className="score-level">
-                        {(() => {
-                          const level = getScoreLevel(match.score || 0);
-                          return (
-                            <span style={{ color: level.color }}>
-                              {level.icon} {level.level}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    </div>
-
-                    <div className="match-actions">
-                      <button 
-                        className="btn-details"
-                        onClick={() => handleLawyerDetails(match.lawyerId)}
-                        disabled={!match.lawyerId}
-                      >
-                        Detayları Gör
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -416,52 +419,36 @@ const MatchPage = () => {
                 <table className="matches-table">
                   <thead>
                     <tr>
-                      <th>Sıra</th>
-                      {/* 🔹 Başlık: Avukat */}
-                      <th>Avukat</th>
-                      <th>Skor</th>
-                      <th>Seviye</th>
-                      <th>Sebep</th>
-                      <th>İşlemler</th>
+                      <th>Sıra</th><th>Avukat</th><th>Skor</th><th>Seviye</th><th>Sebep</th><th>İşlemler</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredAndSortedMatches.map((match, index) => {
-                      const level = getScoreLevel(match.score || 0);
+                      const s = readScore(match);
+                      const level = getScoreLevel(s);
                       return (
                         <tr key={match.lawyerId || index}>
                           <td className="rank-cell">#{index + 1}</td>
-                          {/* 🔹 Hücre: İsim */}
                           <td className="lawyer-id-cell">{lawyerName(match.lawyerId)}</td>
                           <td className="score-cell">
                             <div className="table-score">
-                              <span className="score-value">{(match.score || 0).toFixed(2)}</span>
+                              <span className="score-value">{s.toFixed(2)}</span>
                               <div className="score-bar">
-                                <div 
-                                  className="score-fill" 
-                                  style={{ 
-                                    width: `${(match.score || 0) * 100}%`,
-                                    backgroundColor: getScoreColor(match.score || 0)
-                                  }}
-                                ></div>
+                                <div className="score-fill"
+                                     style={{ width: `${s * 100}%`, backgroundColor: getScoreColor(s) }} />
                               </div>
                             </div>
                           </td>
-                          <td className="level-cell">
-                            <span style={{ color: level.color }}>
-                              {level.icon} {level.level}
-                            </span>
-                          </td>
+                          <td className="level-cell"><span style={{ color: level.color }}>{level.icon} {level.level}</span></td>
                           <td className="reason-cell">{match.reason || 'Sebep belirtilmemiş'}</td>
                           <td className="actions-cell">
-                            <button 
-                              className="btn-details-small"
-                              onClick={() => handleLawyerDetails(match.lawyerId)}
-                              disabled={!match.lawyerId}
-                            >
+                            <button className="btn-details-small" onClick={() => handleLawyerDetails(match.lawyerId)} disabled={!match.lawyerId}>
                               Detay
                             </button>
-                            
+                            <button className="primary-btn small" onClick={() => handleChoose(match)}
+                                    disabled={!selectedCase || !match.lawyerId} style={{ marginLeft: 8 }}>
+                              Eşleştir
+                            </button>
                           </td>
                         </tr>
                       );
@@ -476,45 +463,23 @@ const MatchPage = () => {
               <div className="score-breakdown-section">
                 <h3>📊 Detaylı Skor Analizi</h3>
                 <div className="breakdown-grid">
-                  {filteredAndSortedMatches.slice(0, 3).map((match, index) => (
-                    <div key={match.lawyerId || index} className="breakdown-card">
-                      {/* 🔹 Başlıkta da isim */}
-                      <h4>#{index + 1} - {lawyerName(match.lawyerId)}</h4>
-                      <div className="breakdown-details">
-                        {(() => {
-                          const breakdown = getScoreBreakdown(match);
-                          return (
-                            <>
-                              <div className="breakdown-item">
-                                <span>Ana Skor:</span>
-                                <span>{(breakdown.baseScore * 100).toFixed(1)}%</span>
-                              </div>
-                              <div className="breakdown-item">
-                                <span>Deneyim Bonusu:</span>
-                                <span className="positive">+{(breakdown.experienceBonus * 100).toFixed(1)}%</span>
-                              </div>
-                              <div className="breakdown-item">
-                                <span>Puan Bonusu:</span>
-                                <span className="positive">+{(breakdown.ratingBonus * 100).toFixed(1)}%</span>
-                              </div>
-                              <div className="breakdown-item">
-                                <span>Dil Uyumu:</span>
-                                <span className="positive">+{(breakdown.languageBonus * 100).toFixed(1)}%</span>
-                              </div>
-                              <div className="breakdown-item">
-                                <span>Şehir Uyumu:</span>
-                                <span className="positive">+{(breakdown.cityBonus * 100).toFixed(1)}%</span>
-                              </div>
-                              <div className="breakdown-item total">
-                                <span>Toplam:</span>
-                                <span>{(breakdown.total * 100).toFixed(1)}%</span>
-                              </div>
-                            </>
-                          );
-                        })()}
+                  {filteredAndSortedMatches.slice(0, 3).map((match, index) => {
+                    const s = readScore(match);
+                    const b = getScoreBreakdown({ ...match, score: s });
+                    return (
+                      <div key={match.lawyerId || index} className="breakdown-card">
+                        <h4>#{index + 1} - {lawyerName(match.lawyerId)}</h4>
+                        <div className="breakdown-details">
+                          <div className="breakdown-item"><span>Ana Skor:</span><span>{(b.baseScore * 100).toFixed(1)}%</span></div>
+                          <div className="breakdown-item"><span>Deneyim Bonusu:</span><span className="positive">+{(b.experienceBonus * 100).toFixed(1)}%</span></div>
+                          <div className="breakdown-item"><span>Puan Bonusu:</span><span className="positive">+{(b.ratingBonus * 100).toFixed(1)}%</span></div>
+                          <div className="breakdown-item"><span>Dil Uyumu:</span><span className="positive">+{(b.languageBonus * 100).toFixed(1)}%</span></div>
+                          <div className="breakdown-item"><span>Şehir Uyumu:</span><span className="positive">+{(b.cityBonus * 100).toFixed(1)}%</span></div>
+                          <div className="breakdown-item total"><span>Toplam:</span><span>{(b.total * 100).toFixed(1)}%</span></div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -548,11 +513,29 @@ const MatchPage = () => {
         )}
       </div>
 
-      <LawyerDetailModal
-        lawyerId={selectedLawyerId}
-        isOpen={isModalOpen}
-        onClose={closeModal}
-      />
+      {/* ✅ Eşleştirme Tarihçesi */}
+      {selectedCase && (
+        <div className="history-section">
+          <h3>Eşleştirme Geçmişi</h3>
+          {history.length === 0 ? (
+            <div className="empty">Bu dava için henüz kayıtlı eşleştirme yok.</div>
+          ) : (
+            <div className="history-list">
+              {history.map(h => (
+                <div key={h.id} className="history-item">
+                  <div className="left">
+                    <strong>{lawyerName(h.lawyerId)}</strong>
+                    <div className="muted">{new Date(h.matchedAt ?? h.createdAt ?? Date.now()).toLocaleString()}</div>
+                  </div>
+                  
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <LawyerDetailModal lawyerId={selectedLawyerId} isOpen={isModalOpen} onClose={closeModal} />
     </div>
   );
 };
