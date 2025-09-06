@@ -1561,7 +1561,7 @@ h2 {
 
 .score-text {
   font-size: 0.8rem;
-  color: var(--text-tertiary);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -1576,11 +1576,12 @@ h2 {
 }
 
 .match-reason {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   line-height: 1.6;
   font-size: 0.95rem;
   background: var(--bg-secondary);
   padding: 1rem;
+  font-weight: 500;
   border-radius: 10px;
   border-left: 4px solid var(--primary);
 }
@@ -1623,7 +1624,7 @@ h2 {
 .match-placeholder {
   text-align: center;
   padding: 4rem 2rem;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .placeholder-icon {
@@ -1633,14 +1634,17 @@ h2 {
 }
 
 .match-placeholder h3 {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .match-placeholder p {
   margin: 0;
   font-size: 1.1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .loading-container {
@@ -1668,12 +1672,14 @@ h2 {
 .loading-spinner p {
   margin: 0.5rem 0;
   font-size: 1.1rem;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .loading-subtitle {
   font-size: 0.9rem !important;
-  color: var(--text-quaternary) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 500;
 }
 
 @keyframes spin {
@@ -1907,7 +1913,7 @@ h2 {
 
 .score-level {
   font-size: 0.75rem;
-  color: #6c757d;
+  color: var(--text-primary);
   font-weight: 600;
   background: rgba(255, 255, 255, 0.8);
   padding: 0.25rem 0.5rem;
@@ -2476,8 +2482,8 @@ h2 {
 .stat-label {
   display: block;
   font-size: 0.9rem;
-  color: #6b7280;
-  font-weight: 500;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .lawyer-details-grid {
@@ -3079,6 +3085,128 @@ h2 {
   display: flex;
   justify-content: center;
   gap: 16px;
+}
+
+/* === MatchConfirmationModal özel stilleri === */
+.confirmation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.confirmation-summary {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-item strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.case-info,
+.lawyer-info,
+.score-info {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.score-info {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.confirmation-description {
+  background: var(--info-50);
+  border: 1px solid var(--info-200);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.confirmation-description p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.processing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--primary-50);
+  border: 1px solid var(--primary-200);
+  border-radius: 8px;
+  color: var(--primary-700);
+  font-weight: 500;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--primary-200);
+  border-top: 2px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Modal erişilebilirlik iyileştirmeleri */
+.modal-card:focus {
+  outline: none;
+}
+
+.modal-card[role="dialog"] {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Buton durumları */
+.btn-secondary:disabled,
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Responsive iyileştirmeler */
+@media (max-width: 768px) {
+  .confirmation-summary {
+    padding: 16px;
+  }
+  
+  .summary-item {
+    gap: 6px;
+  }
+  
+  .confirmation-description {
+    padding: 12px;
+  }
+  
+  .confirmation-description p {
+    font-size: 0.9rem;
+  }
 }
 .confirm-card .btn-secondary,
 .confirm-card .btn-danger {
