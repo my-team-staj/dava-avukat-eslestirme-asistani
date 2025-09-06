@@ -26,7 +26,9 @@ export default function CaseListPage() {
     requiresProBono: "",
     sortBy: "filedDate",
     sortOrder: "desc",
+    searchTerm: "",
   });
+  const [searchInput, setSearchInput] = useState("");
 
   const [selectedCase, setSelectedCase] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,6 +41,15 @@ export default function CaseListPage() {
     fetchFiltersMeta();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
+
+  // Debounce arama için useEffect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setQuery(prev => ({ ...prev, searchTerm: searchInput, page: 1 }));
+    }, 500); // 500ms gecikme
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
 
   async function fetchCases() {
     setLoading(true);
@@ -118,6 +129,20 @@ export default function CaseListPage() {
 
       {/* Filtreler */}
       <div className="filters">
+        <div className="filter-item search-item">
+          <label>Arama</label>
+          <div className="search-input-container">
+            <input
+              type="text"
+              placeholder="Dava başlığı veya açıklama ile ara..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="search-input"
+            />
+            <span className="search-icon">🔍</span>
+          </div>
+        </div>
+
         <div className="filter-item">
           <label>Şehir</label>
           <select

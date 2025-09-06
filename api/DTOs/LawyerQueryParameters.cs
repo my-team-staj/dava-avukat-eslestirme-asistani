@@ -5,6 +5,7 @@
         public string? City { get; set; }
         public bool? IsActive { get; set; }
         public bool? AvailableForProBono { get; set; }
+        public string? SearchTerm { get; set; }
 
         // Sayfalama
         public int Page { get; set; } = 1;

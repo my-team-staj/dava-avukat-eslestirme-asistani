@@ -3087,6 +3087,90 @@ h2 {
   gap: 16px;
 }
 
+/* === Arama Input Stilleri === */
+.search-item {
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px 12px 40px;
+  border: 2px solid var(--border-primary);
+  border-radius: 12px;
+  font-size: 1rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  transform: translateZ(0); /* Hardware acceleration */
+  will-change: border-color, box-shadow;
+}
+
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-100);
+  background: var(--bg-primary);
+}
+
+.search-input::placeholder {
+  color: var(--text-quaternary);
+  font-style: italic;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-tertiary);
+  font-size: 1.1rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input:focus + .search-icon {
+  color: var(--primary);
+}
+
+/* Filtreler responsive düzenleme */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: end;
+  transition: all 0.3s ease;
+}
+
+/* Arama sonuçları yumuşak geçiş */
+.table-container,
+.matches-grid {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.table-container.loading,
+.matches-grid.loading {
+  opacity: 0.7;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 150px;
+}
+
+.filter-item label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
 /* === MatchConfirmationModal özel stilleri === */
 .confirmation-content {
   display: flex;
@@ -3206,6 +3290,32 @@ h2 {
   
   .confirmation-description p {
     font-size: 0.9rem;
+  }
+
+  /* Arama responsive */
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-item {
+    min-width: 100%;
+  }
+  
+  .filter-item {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-input {
+    padding: 10px 14px 10px 36px;
+    font-size: 0.9rem;
+  }
+  
+  .search-icon {
+    left: 10px;
+    font-size: 1rem;
   }
 }
 .confirm-card .btn-secondary,

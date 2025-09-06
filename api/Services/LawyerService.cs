@@ -73,6 +73,15 @@ namespace dava_avukat_eslestirme_asistani.Services
             if (query.AvailableForProBono.HasValue)
                 q = q.Where(l => l.AvailableForProBono == query.AvailableForProBono.Value);
 
+            // Arama
+            if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+            {
+                var searchTerm = query.SearchTerm.ToLower();
+                q = q.Where(l => l.Name.ToLower().Contains(searchTerm) || 
+                                l.Email.ToLower().Contains(searchTerm) ||
+                                l.BaroNumber.ToLower().Contains(searchTerm));
+            }
+
             // Toplam kayıt
             var totalItems = await q.CountAsync();
 
