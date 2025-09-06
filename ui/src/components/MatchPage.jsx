@@ -167,7 +167,11 @@ const MatchPage = () => {
 
   const handleMatch = async () => {
     if (!selectedCase) { toast.warning('Lütfen bir dava seçin'); return; }
+    
+    // Önceki sonuçları temizle ve loading başlat
+    setMatches([]);
     setLoading(true);
+    
     try {
       const response = await apiClient.post(API_CONFIG.ENDPOINTS.MATCH, {
         caseId: selectedCase,
@@ -548,7 +552,7 @@ if (score >= 0.5) return { level: 'Orta', icon: '⚠️', color: '#ffffff' };
           </div>
         )}
 
-        {loading && (
+        {loading && matches.length === 0 && (
           <div className="loading-container">
             <div className="loading-spinner">
               <div className="spinner"></div>
