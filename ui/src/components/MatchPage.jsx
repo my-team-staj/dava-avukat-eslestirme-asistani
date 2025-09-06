@@ -199,9 +199,9 @@ const MatchPage = () => {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 0.8) return '#28a745';
-    if (score >= 0.6) return '#ffc107';
-    return '#dc3545';
+    if (score >= 0.8) return 'var(--success)';
+    if (score >= 0.6) return 'var(--warning)';
+    return 'var(--error)';
   };
   const getScoreText = (score) => {
     if (score >= 0.8) return 'Mükemmel';
@@ -209,12 +209,12 @@ const MatchPage = () => {
     return 'Orta';
   };
   const getScoreLevel = (score) => {
-    if (score >= 0.9) return { level: 'Süper', icon: '🏆', color: '#28a745' };
-    if (score >= 0.8) return { level: 'Mükemmel', icon: '⭐', color: '#28a745' };
-    if (score >= 0.7) return { level: 'Çok İyi', icon: '👍', color: '#20c997' };
-    if (score >= 0.6) return { level: 'İyi', icon: '✅', color: '#ffc107' };
-    if (score >= 0.5) return { level: 'Orta', icon: '⚠️', color: '#fd7e14' };
-    return { level: 'Düşük', icon: '❌', color: '#dc3545' };
+    if (score >= 0.9) return { level: 'Süper', icon: '🏆', color: 'var(--success)' };
+    if (score >= 0.8) return { level: 'Mükemmel', icon: '⭐', color: 'var(--success)' };
+    if (score >= 0.7) return { level: 'Çok İyi', icon: '👍', color: 'var(--accent)' };
+    if (score >= 0.6) return { level: 'İyi', icon: '✅', color: 'var(--warning)' };
+    if (score >= 0.5) return { level: 'Orta', icon: '⚠️', color: 'var(--warning-dark)' };
+    return { level: 'Düşük', icon: '❌', color: 'var(--error)' };
   };
 
   const handleLawyerDetails = (lawyerId) => { setSelectedLawyerId(lawyerId); setIsModalOpen(true); };
