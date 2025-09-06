@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "../App.css";
 
 function CreateCaseForm() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -42,6 +44,8 @@ function CreateCaseForm() {
     try {
       await axios.post("https://localhost:60227/api/cases", form);
       toast.success("✅ Dava başarıyla oluşturuldu!");
+      
+      // Formu temizle
       setForm({
         title: "",
         description: "",
@@ -54,9 +58,16 @@ function CreateCaseForm() {
         requiredExperienceLevel: "Orta",
         workingGroupId: ""
       });
+
+      // Başarılı kayıt sonrası dava listesine yönlendir
+      setTimeout(() => {
+        navigate("/cases");
+      }, 1500); // 1.5 saniye bekle ki kullanıcı başarı mesajını görebilsin
+      
     } catch (error) {
       console.error(error);
       toast.error("❌ Kayıt sırasında bir hata oluştu.");
+      // Hata durumunda yönlendirme yapma
     }
   };
 

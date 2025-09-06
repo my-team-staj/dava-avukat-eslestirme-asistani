@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "../App.css";
 
 function LawyerAddForm() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     experienceYears: 0,
@@ -43,6 +45,8 @@ function LawyerAddForm() {
     try {
       await axios.post("https://localhost:60227/api/lawyers", form);
       toast.success("✅ Avukat başarıyla eklendi!");
+      
+      // Formu temizle
       setForm({
         name: "",
         experienceYears: 0,
@@ -58,9 +62,16 @@ function LawyerAddForm() {
         isActive: true,
         workingGroupId: ""
       });
+
+      // Başarılı kayıt sonrası avukat listesine yönlendir
+      setTimeout(() => {
+        navigate("/lawyers");
+      }, 1500); // 1.5 saniye bekle ki kullanıcı başarı mesajını görebilsin
+      
     } catch (err) {
       console.error(err);
       toast.error("❌ Kayıt sırasında hata oluştu.");
+      // Hata durumunda yönlendirme yapma
     }
   };
 
