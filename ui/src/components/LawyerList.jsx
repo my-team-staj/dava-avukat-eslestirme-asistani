@@ -22,7 +22,9 @@ function LawyerList() {
     availableForProBono: "",
     sortBy: "name",
     sortOrder: "asc",
+    searchTerm: "",
   });
+  const [searchInput, setSearchInput] = useState("");
   const [totalPages, setTotalPages] = useState(1);
 
   const [wgMap, setWgMap] = useState({});
@@ -77,6 +79,15 @@ function LawyerList() {
     fetchCities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
+
+  // Debounce arama için useEffect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setQuery(prev => ({ ...prev, searchTerm: searchInput, page: 1 }));
+    }, 500); // 500ms gecikme
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
 
   async function fetchLawyers() {
     setLoading(true);
@@ -167,6 +178,20 @@ function LawyerList() {
 
       {/* Filtre Barı */}
       <div className="filters">
+        <div className="filter-item search-item">
+          <label>Arama</label>
+          <div className="search-input-container">
+            <input
+              type="text"
+              placeholder="Avukat adı, e-posta veya baro no ile ara..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="search-input"
+            />
+            <span className="search-icon">🔍</span>
+          </div>
+        </div>
+
         <div className="filter-item">
           <label>Şehir</label>
           <select

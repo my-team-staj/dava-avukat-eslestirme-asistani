@@ -50,6 +50,14 @@ namespace dava_avukat_eslestirme_asistani.Services
             if (parameters.RequiresProBono.HasValue)
                 query = query.Where(c => c.RequiresProBono == parameters.RequiresProBono.Value);
 
+            // Arama
+            if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+            {
+                var searchTerm = parameters.SearchTerm.ToLower();
+                query = query.Where(c => c.Title.ToLower().Contains(searchTerm) || 
+                                       c.Description.ToLower().Contains(searchTerm));
+            }
+
             // Sıralama
             switch (parameters.SortBy?.ToLower())
             {
