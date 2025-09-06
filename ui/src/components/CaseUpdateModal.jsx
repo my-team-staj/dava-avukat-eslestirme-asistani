@@ -216,9 +216,8 @@ export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
               onChange={handleChange}
             >
               <option value="">Seçiniz</option>
-              <option value="Junior">Junior</option>
-              <option value="Mid">Orta</option>
-              <option value="Senior">Kıdemli</option>
+              <option value="Başlangıç">Başlangıç</option>
+              <option value="orta">orta</option>
               <option value="Uzman">Uzman</option>
             </select>
 
