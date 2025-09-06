@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import LawyerDetailModal from './LawyerDetailModal';
+import MatchConfirmationModal from './MatchConfirmationModal';
 import apiClient, { API_CONFIG, getChoicesByCaseSafe, postChooseSafe } from '../config/api';
 import "../App.css";
 
@@ -13,12 +14,15 @@ const MatchPage = () => {
   const [topK, setTopK] = useState(3);
   const [selectedLawyerId, setSelectedLawyerId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState(null);
   const [filterScore, setFilterScore] = useState(80);
   const [sortBy, setSortBy] = useState('score');
   const [viewMode, setViewMode] = useState('cards');
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
 
   const [lawyerNamesById, setLawyerNamesById] = useState({});
+  const [lawyerDetailsById, setLawyerDetailsById] = useState({});
   const [history, setHistory] = useState([]);
 
   // ---- Skor normalizasyonu ----
@@ -103,6 +107,32 @@ const MatchPage = () => {
     }
   };
 
+  // 🔹 Avukat detaylarını ID'lerden toplayan yardımcı
+  const ensureLawyerDetails = async (arr) => {
+    if (!Array.isArray(arr) || arr.length === 0) return;
+    const ids = [...new Set(arr.map(m => (m && (m.lawyerId ?? m.lawyerID ?? m.lawyer?.id))).filter(Boolean))];
+    const toFetch = ids.filter(id => !lawyerDetailsById[id]);
+    if (toFetch.length === 0) return;
+
+    try {
+      const pairs = await Promise.all(
+        toFetch.map(id =>
+          apiClient
+            .get(`${API_CONFIG.ENDPOINTS.LAWYERS}/${id}`)
+            .then(r => [id, r.data])
+            .catch(() => [id, null])
+        )
+      );
+      const next = { ...lawyerDetailsById };
+      for (const [id, details] of pairs) {
+        if (details) next[id] = details;
+      }
+      setLawyerDetailsById(next);
+    } catch (e) {
+      console.warn('Lawyer details fetch warning:', e);
+    }
+  };
+
   // 🔹 Tarihçe
   const normalizeHistoryList = (list, caseId) => {
     const safe = Array.isArray(list) ? list : [];
@@ -147,10 +177,12 @@ const MatchPage = () => {
       if (response.data?.candidates && Array.isArray(response.data.candidates)) {
         setMatches(response.data.candidates);
         ensureLawyerNames(response.data.candidates);
+        ensureLawyerDetails(response.data.candidates);
         toast.success(`${response.data.candidates.length} avukat önerildi`);
       } else if (Array.isArray(response.data)) {
         setMatches(response.data);
         ensureLawyerNames(response.data);
+        ensureLawyerDetails(response.data);
         toast.success(`${response.data.length} avukat önerildi`);
       } else {
         console.warn('Unexpected match response structure:', response.data);
@@ -166,20 +198,24 @@ const MatchPage = () => {
     }
   };
 
-  const handleChoose = async (match) => {
-    if (!selectedCase) { toast.warning('Lütfen bir dava seçin'); return; }
-    if (!match?.lawyerId) { toast.warning('Avukat bulunamadı'); return; }
+  const handleChoose = (match) => {
+    if (!selectedCase) { 
+      toast.warning('Lütfen bir dava seçin'); 
+      return; 
+    }
+    if (!match?.lawyerId) { 
+      toast.warning('Avukat bulunamadı'); 
+      return; 
+    }
 
+    // Modal'ı aç ve seçilen eşleştirmeyi sakla
+    setSelectedMatch(match);
+    setIsConfirmationModalOpen(true);
+  };
+
+  const handleConfirmMatch = async (payload) => {
     try {
-      const payload = {
-        caseId: selectedCase,
-        lawyerId: match.lawyerId,
-        score: Number((readScore(match)).toFixed(2)),
-      };
-      await postChooseSafe(payload);
-
-      toast.success(`Eşleştirme kaydedildi: ${lawyerName(match.lawyerId)} (${payload.score})`);
-
+      // Tarihçeyi güncelle
       setHistory(prev => [
         {
           id: `tmp-${Date.now()}`,
@@ -191,12 +227,24 @@ const MatchPage = () => {
         ...prev
       ]);
 
+      // Tarihçeyi yeniden yükle
       fetchHistory(selectedCase);
     } catch (err) {
-      console.error(err);
-      toast.error("Eşleştirme kaydedilemedi");
+      console.error('Tarihçe güncelleme hatası:', err);
     }
   };
+
+  const handleCloseConfirmationModal = () => {
+    setIsConfirmationModalOpen(false);
+    setSelectedMatch(null);
+  };
+
+  // Modal kapandığında state'i temizle
+  useEffect(() => {
+    if (!isConfirmationModalOpen) {
+      setSelectedMatch(null);
+    }
+  }, [isConfirmationModalOpen]);
 
   const getScoreColor = (score) => {
     if (score >= 0.8) return 'var(--success)';
@@ -204,16 +252,20 @@ const MatchPage = () => {
     return 'var(--error)';
   };
   const getScoreText = (score) => {
+    if (score >= 0.9) return 'Süper';
     if (score >= 0.8) return 'Mükemmel';
+    if (score >= 0.7) return 'Çok İyi';
     if (score >= 0.6) return 'İyi';
-    return 'Orta';
+    if (score >= 0.5) return 'Orta';
+    return 'Düşük';
   };
   const getScoreLevel = (score) => {
-    if (score >= 0.9) return { level: 'Süper', icon: '🏆', color: 'var(--success)' };
-    if (score >= 0.8) return { level: 'Mükemmel', icon: '⭐', color: 'var(--success)' };
-    if (score >= 0.7) return { level: 'Çok İyi', icon: '👍', color: 'var(--accent)' };
-    if (score >= 0.6) return { level: 'İyi', icon: '✅', color: 'var(--warning)' };
-    if (score >= 0.5) return { level: 'Orta', icon: '⚠️', color: 'var(--warning-dark)' };
+    if (score >= 0.9) return { level: 'Süper', icon: '🏆', color: '#ffffff' };
+if (score >= 0.8) return { level: 'Mükemmel', icon: '⭐', color: '#ffffff' };
+if (score >= 0.7) return { level: 'Çok İyi', icon: '👍', color: '#ffffff' };
+if (score >= 0.6) return { level: 'İyi', icon: '✅', color: '#ffffff' };
+if (score >= 0.5) return { level: 'Orta', icon: '⚠️', color: '#ffffff' };
+
     return { level: 'Düşük', icon: '❌', color: 'var(--error)' };
   };
 
@@ -529,6 +581,21 @@ const MatchPage = () => {
       )}
 
       <LawyerDetailModal lawyerId={selectedLawyerId} isOpen={isModalOpen} onClose={closeModal} />
+      
+      {/* Eşleştirme Onay Modal'ı */}
+      <MatchConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        onClose={handleCloseConfirmationModal}
+        caseData={selectedCase ? cases.find(c => c.id === selectedCase) : null}
+        lawyerData={selectedMatch ? {
+          lawyerId: selectedMatch.lawyerId,
+          name: lawyerName(selectedMatch.lawyerId),
+          city: lawyerDetailsById[selectedMatch.lawyerId]?.city || selectedMatch.city || 'Belirtilmemiş',
+          workingGroup: lawyerDetailsById[selectedMatch.lawyerId]?.workingGroup?.groupName || selectedMatch.workingGroup || 'Belirtilmemiş',
+          score: readScore(selectedMatch)
+        } : null}
+        onSuccess={handleConfirmMatch}
+      />
     </div>
   );
 };
