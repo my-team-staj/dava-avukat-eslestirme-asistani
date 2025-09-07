@@ -24,6 +24,10 @@ const MatchPage = () => {
   const [lawyerNamesById, setLawyerNamesById] = useState({});
   const [lawyerDetailsById, setLawyerDetailsById] = useState({});
   const [history, setHistory] = useState([]);
+  const [availableLawyers, setAvailableLawyers] = useState([]);
+  const [availableLawyersCount, setAvailableLawyersCount] = useState(0);
+  const [showAvailableLawyers, setShowAvailableLawyers] = useState(false);
+  const [loadingAvailableLawyers, setLoadingAvailableLawyers] = useState(false);
 
   // ---- Skor normalizasyonu ----
   const pickScore01 = (obj) => {
@@ -46,6 +50,7 @@ const MatchPage = () => {
 
   useEffect(() => { fetchAllCases(); }, []);
   useEffect(() => { if (selectedCase) fetchHistory(selectedCase); }, [selectedCase]);
+  useEffect(() => { if (selectedCase) fetchAvailableLawyers(); }, [selectedCase]);
 
   // 🔥 TÜM SAYFALARI TOPLA
   const fetchAllCases = async () => {
@@ -57,7 +62,7 @@ const MatchPage = () => {
 
       do {
         const res = await apiClient.get(API_CONFIG.ENDPOINTS.CASES, {
-          params: { page, pageSize, sortBy: "filedDate", sortOrder: "desc" }
+          params: { page, pageSize, sortBy: "filedDate", sortOrder: "desc", isActive: true }
         });
 
         // Olası şekiller: {items, totalPages} | dizi | {data, totalPages}
@@ -162,6 +167,54 @@ const MatchPage = () => {
       console.error(err);
       toast.error("Eşleştirme Geçmişi yüklenemedi");
       setHistory([]);
+    }
+  };
+
+  // Uygun avukatları getir
+  const fetchAvailableLawyers = async () => {
+    if (!selectedCase) return;
+    
+    setLoadingAvailableLawyers(true);
+    try {
+      const caseData = cases.find(c => c.id === selectedCase);
+      if (!caseData) return;
+
+      // Dava kriterlerine göre avukatları filtrele
+      const params = {
+        page: 1,
+        pageSize: 100, // Tüm uygun avukatları getir
+        isActive: true,
+        city: caseData.city || "",
+        availableForProBono: caseData.requiresProBono ? true : undefined
+      };
+
+      const response = await apiClient.get(API_CONFIG.ENDPOINTS.LAWYERS, { params });
+      const lawyers = response.data?.items || [];
+      
+      // Dil uyumunu kontrol et (basit kontrol)
+      const filteredLawyers = lawyers.filter(lawyer => {
+        // Şehir uyumu
+        if (caseData.city && lawyer.city !== caseData.city) return false;
+        
+        // Pro Bono uyumu
+        if (caseData.requiresProBono && !lawyer.availableForProBono) return false;
+        
+        // Dil uyumu (basit kontrol - daha gelişmiş olabilir)
+        if (caseData.language && caseData.language !== 'Türkçe') {
+          // Dil uyumu kontrolü burada yapılabilir
+        }
+        
+        return true;
+      });
+
+      setAvailableLawyers(filteredLawyers);
+      setAvailableLawyersCount(filteredLawyers.length);
+    } catch (error) {
+      console.error('Uygun avukatlar alınırken hata:', error);
+      setAvailableLawyers([]);
+      setAvailableLawyersCount(0);
+    } finally {
+      setLoadingAvailableLawyers(false);
     }
   };
 
@@ -368,6 +421,61 @@ if (score >= 0.5) return { level: 'Orta', icon: '⚠️', color: '#ffffff' };
               </div>
             </div>
 
+            {/* Uygun Avukat Sayısı ve Listesi */}
+            <div className="available-lawyers-section">
+              <div className="available-lawyers-header">
+                <div className="lawyers-count">
+                  {loadingAvailableLawyers ? (
+                    <span className="loading-text">Uygun avukatlar kontrol ediliyor...</span>
+                  ) : availableLawyersCount > 0 ? (
+                    <span className="count-text">
+                      <strong>{availableLawyersCount}</strong> avukat bulundu
+                    </span>
+                  ) : (
+                    <span className="no-lawyers-text">
+                      Bu dava için kriterlere uyan avukat bulunamadı
+                    </span>
+                  )}
+                </div>
+                {availableLawyersCount > 0 && (
+                  <button 
+                    className="toggle-lawyers-btn"
+                    onClick={() => setShowAvailableLawyers(!showAvailableLawyers)}
+                  >
+                    {showAvailableLawyers ? '🔼 Gizle' : '🔽 Göster'}
+                  </button>
+                )}
+              </div>
+
+              {showAvailableLawyers && availableLawyersCount > 0 && (
+                <div className="available-lawyers-list">
+                  <div className="lawyers-list-header">
+                    <h4>Uygun Avukatlar</h4>
+                    <span className="lawyers-count-badge">{availableLawyersCount} avukat</span>
+                  </div>
+                  <div className="lawyers-grid">
+                    {availableLawyers.map((lawyer, index) => (
+                      <div key={lawyer.id || index} className="lawyer-card-mini">
+                        <div className="lawyer-info">
+                          <div className="lawyer-name">{lawyer.name}</div>
+                          <div className="lawyer-details">
+                            <span className="lawyer-city">📍 {lawyer.city}</span>
+                            <span className="lawyer-experience">⚖️ {lawyer.experienceYears || 0} yıl</span>
+                            {lawyer.availableForProBono && (
+                              <span className="pro-bono-badge">Pro Bono</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="lawyer-rating">
+                          {lawyer.rating ? `⭐ ${lawyer.rating.toFixed(1)}` : '⭐ -'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Gelişmiş Sonuç Kontrolleri */}
             <div className="results-header">
               <div className="view-controls">
@@ -541,6 +649,64 @@ if (score >= 0.5) return { level: 'Orta', icon: '⚠️', color: '#ffffff' };
             <div className="placeholder-icon">🔍</div>
             <h3>Eşleştirme Başlatın</h3>
             <p>Yukarıdan bir dava seçin ve eşleştirme işlemini başlatın</p>
+          </div>
+        )}
+
+        {selectedCase && matches.length === 0 && !loading && (
+          <div className="available-lawyers-preview">
+            <div className="available-lawyers-section">
+              <div className="available-lawyers-header">
+                <div className="lawyers-count">
+                  {loadingAvailableLawyers ? (
+                    <span className="loading-text">Uygun avukatlar kontrol ediliyor...</span>
+                  ) : availableLawyersCount > 0 ? (
+                    <span className="count-text">
+                      <strong>{availableLawyersCount}</strong> avukat bulundu
+                    </span>
+                  ) : (
+                    <span className="no-lawyers-text">
+                      Bu dava için kriterlere uyan avukat bulunamadı
+                    </span>
+                  )}
+                </div>
+                {availableLawyersCount > 0 && (
+                  <button 
+                    className="toggle-lawyers-btn"
+                    onClick={() => setShowAvailableLawyers(!showAvailableLawyers)}
+                  >
+                    {showAvailableLawyers ? '🔼 Gizle' : '🔽 Göster'}
+                  </button>
+                )}
+              </div>
+
+              {showAvailableLawyers && availableLawyersCount > 0 && (
+                <div className="available-lawyers-list">
+                  <div className="lawyers-list-header">
+                    <h4>Uygun Avukatlar</h4>
+                    <span className="lawyers-count-badge">{availableLawyersCount} avukat</span>
+                  </div>
+                  <div className="lawyers-grid">
+                    {availableLawyers.map((lawyer, index) => (
+                      <div key={lawyer.id || index} className="lawyer-card-mini">
+                        <div className="lawyer-info">
+                          <div className="lawyer-name">{lawyer.name}</div>
+                          <div className="lawyer-details">
+                            <span className="lawyer-city">📍 {lawyer.city}</span>
+                            <span className="lawyer-experience">⚖️ {lawyer.experienceYears || 0} yıl</span>
+                            {lawyer.availableForProBono && (
+                              <span className="pro-bono-badge">Pro Bono</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="lawyer-rating">
+                          {lawyer.rating ? `⭐ ${lawyer.rating.toFixed(1)}` : '⭐ -'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

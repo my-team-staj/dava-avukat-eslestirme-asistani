@@ -201,6 +201,18 @@
   height: 48px; 
   margin-right: 15px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid var(--border-primary);
+  transition: all 0.3s ease;
+}
+
+.navbar-logo-img-new:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
 }
 
 .navbar-logo-new span {
@@ -294,6 +306,19 @@
   margin-bottom: 1.1rem;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
   animation: float 3s ease-in-out infinite;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 16px;
+  border: 2px solid var(--border-primary);
+  box-shadow: var(--shadow-xl);
+  transition: all 0.3s ease;
+}
+
+.hero-logo:hover {
+  transform: scale(1.05) translateY(-5px);
+  box-shadow: var(--shadow-2xl);
+  border-color: var(--primary);
 }
 
 @keyframes float {
@@ -1252,6 +1277,18 @@ h2 {
   
   .navbar-logo-new span { 
     font-size: 1.5rem; 
+  }
+  
+  .navbar-logo-img-new {
+    height: 40px;
+    padding: 6px;
+    border-radius: 8px;
+  }
+  
+  .hero-logo {
+    height: 70px;
+    padding: 12px;
+    border-radius: 16px;
   }
   
   .filters{
@@ -3169,6 +3206,211 @@ h2 {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 0.9rem;
+}
+
+/* === Uygun Avukat Sayısı ve Listesi Stilleri === */
+.available-lawyers-section {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.available-lawyers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.lawyers-count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.count-text {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.count-text strong {
+  color: var(--primary);
+  font-size: 1.3rem;
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.no-lawyers-text {
+  color: var(--error);
+  font-weight: 500;
+}
+
+.toggle-lawyers-btn {
+  background: var(--primary);
+  color: var(--text-inverse);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.toggle-lawyers-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.available-lawyers-list {
+  border-top: 1px solid var(--border-primary);
+  padding-top: 15px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lawyers-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.lawyers-list-header h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.lawyers-count-badge {
+  background: var(--primary-100);
+  color: var(--primary-700);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.lawyers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.lawyer-card-mini {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.lawyer-card-mini:hover {
+  background: var(--primary-50);
+  border-color: var(--primary-200);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.lawyer-info {
+  flex: 1;
+}
+
+.lawyer-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.lawyer-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.lawyer-city,
+.lawyer-experience {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.pro-bono-badge {
+  background: var(--success-100);
+  color: var(--success-700);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.lawyer-rating {
+  font-size: 0.9rem;
+  color: var(--warning);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.available-lawyers-preview {
+  margin: 20px 0;
+}
+
+/* Responsive düzenlemeler */
+@media (max-width: 768px) {
+  .available-lawyers-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  
+  .lawyers-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .lawyer-card-mini {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .lawyer-rating {
+    align-self: flex-end;
+  }
 }
 
 /* === MatchConfirmationModal özel stilleri === */
