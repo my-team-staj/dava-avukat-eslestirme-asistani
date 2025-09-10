@@ -55,28 +55,25 @@ namespace dava_avukat_eslestirme_asistani.Services
             const int SQL_TAKE = 200;
             var q = _db.Lawyers.AsNoTracking()
                 .Where(l => l.IsActive)
-                .Where(l => l.City == c.City)
-                .Where(l => l.AvailableForProBono == c.RequiresProBono);
+                .Where(l => l.City == c.City);
+                // AvailableForProBono alanı kaldırıldı, WorkGroup ile değiştirildi
 
-            if (c.WorkingGroupId.HasValue)
-                q = q.Where(l => l.WorkingGroupId == c.WorkingGroupId.Value);
+            // WorkingGroupId referansı kaldırıldı, WorkGroup string alanı kullanılıyor
 
             var sqlCandidates = await q
-                .OrderByDescending(l => l.Rating)
-                .ThenByDescending(l => l.TotalCasesHandled)
-                .ThenByDescending(l => l.ExperienceYears)
+                .OrderByDescending(l => l.StartDate)
                 .Take(SQL_TAKE)
                 .Select(l => new
                 {
                     l.Id,
-                    l.Name,
-                    l.ExperienceYears,
+                    l.FullName,
                     l.City,
-                    l.LanguagesSpoken,
-                    l.AvailableForProBono,
-                    l.Rating,                // double veya double?
-                    l.TotalCasesHandled,     // int
-                    l.WorkingGroupId         // int?
+                    l.Languages,
+                    l.WorkGroup,
+                    l.Title,
+                    l.StartDate,
+                    l.Education,
+                    l.PrmEmployeeRecordType
                 })
                 .ToListAsync();
 
@@ -87,34 +84,37 @@ namespace dava_avukat_eslestirme_asistani.Services
                 .Select(l => new
                 {
                     l.Id,
-                    l.Name,
-                    l.ExperienceYears,
+                    l.FullName,
                     l.City,
-                    Tokens = TokenizeLangs(l.LanguagesSpoken).Select(Normalize).ToArray(),
-                    l.AvailableForProBono,
-                    Rating = l.Rating, // varsayılan double; tipin farklıysa EF entity'ine göre ayarla
-                    l.TotalCasesHandled,
-                    WG = l.WorkingGroupId ?? 0
+                    Tokens = TokenizeLangs(l.Languages).Select(Normalize).ToArray(),
+                    l.WorkGroup,
+                    l.Title,
+                    l.StartDate,
+                    l.Education,
+                    l.PrmEmployeeRecordType
                 })
                 .Where(l => string.IsNullOrEmpty(wantedLang) || l.Tokens.Contains(wantedLang))
                 .ToList();
 
             // 4) Heuristik sıralama ve top-N
             var finalCandidates = langMatched
-                .OrderByDescending(l => l.Rating)
-                .ThenByDescending(l => l.TotalCasesHandled)
-                .ThenByDescending(l => l.ExperienceYears)
+                .OrderByDescending(l => l.StartDate)
                 .Take(take)
                 .Select(l => new LawyerCard(
                     Id: l.Id,
-                    Name: l.Name ?? string.Empty,
-                    ExperienceYears: l.ExperienceYears,
+                    Name: l.FullName ?? string.Empty,
+                    ExperienceYears: 0, // Eski alan kaldırıldı
                     City: l.City ?? string.Empty,
                     Languages: l.Tokens,
-                    AvailableForProBono: l.AvailableForProBono,
-                    Rating: l.Rating,
-                    TotalCasesHandled: l.TotalCasesHandled,
-                    WorkingGroupId: l.WG
+                    AvailableForProBono: false, // Eski alan kaldırıldı
+                    Rating: 0.0, // Eski alan kaldırıldı
+                    TotalCasesHandled: 0, // Eski alan kaldırıldı
+                    WorkingGroupId: null,
+                    WorkGroup: l.WorkGroup ?? string.Empty,
+                    Title: l.Title ?? string.Empty,
+                    StartDate: l.StartDate,
+                    Education: l.Education ?? string.Empty,
+                    PrmEmployeeRecordType: l.PrmEmployeeRecordType ?? string.Empty
                 ))
                 .ToList();
 

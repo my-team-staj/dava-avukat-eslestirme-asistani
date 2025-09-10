@@ -28,8 +28,9 @@ namespace dava_avukat_eslestirme_asistani.Entities
 
         public bool IsActive { get; set; } = true;
 
-        public int? WorkingGroupId { get; set; }
+        public string WorkGroup { get; set; } = string.Empty;
 
+        public int? WorkingGroupId { get; set; }
         public virtual WorkingGroup? WorkingGroup { get; set; }
 
         public bool IsDeleted { get; set; }

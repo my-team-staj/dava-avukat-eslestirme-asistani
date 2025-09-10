@@ -70,31 +70,33 @@ namespace dava_avukat_eslestirme_asistani.Services
             if (query.IsActive.HasValue)
                 q = q.Where(l => l.IsActive == query.IsActive.Value);
 
-            if (query.AvailableForProBono.HasValue)
-                q = q.Where(l => l.AvailableForProBono == query.AvailableForProBono.Value);
+            if (!string.IsNullOrWhiteSpace(query.WorkGroup))
+                q = q.Where(l => l.WorkGroup == query.WorkGroup);
 
             // Arama
             if (!string.IsNullOrWhiteSpace(query.SearchTerm))
             {
                 var searchTerm = query.SearchTerm.ToLower();
-                q = q.Where(l => l.Name.ToLower().Contains(searchTerm) || 
+                q = q.Where(l => l.FullName.ToLower().Contains(searchTerm) || 
                                 l.Email.ToLower().Contains(searchTerm) ||
-                                l.BaroNumber.ToLower().Contains(searchTerm));
+                                l.Title.ToLower().Contains(searchTerm));
             }
 
             // Toplam kayıt
             var totalItems = await q.CountAsync();
 
             // Sıralama
-            var sortBy = (query.SortBy ?? "Name").ToLowerInvariant();
+            var sortBy = (query.SortBy ?? "FullName").ToLowerInvariant();
             var desc = string.Equals(query.SortOrder, "desc", StringComparison.OrdinalIgnoreCase);
 
             q = sortBy switch
             {
-                "rating" => desc ? q.OrderByDescending(l => l.Rating).ThenBy(l => l.Name)
-                                 : q.OrderBy(l => l.Rating).ThenBy(l => l.Name),
-                "name" or _ => desc ? q.OrderByDescending(l => l.Name)
-                                    : q.OrderBy(l => l.Name)
+                "startdate" => desc ? q.OrderByDescending(l => l.StartDate).ThenBy(l => l.FullName)
+                                   : q.OrderBy(l => l.StartDate).ThenBy(l => l.FullName),
+                "workgroup" => desc ? q.OrderByDescending(l => l.WorkGroup).ThenBy(l => l.FullName)
+                                   : q.OrderBy(l => l.WorkGroup).ThenBy(l => l.FullName),
+                "fullname" or _ => desc ? q.OrderByDescending(l => l.FullName)
+                                        : q.OrderBy(l => l.FullName)
             };
 
             // Sayfalama

@@ -1,19 +1,22 @@
+using dava_avukat_eslestirme_asistani.Validation;
+
 namespace dava_avukat_eslestirme_asistani.DTOs
 {
     public class LawyerUpdateDto
     {
-        public string Name { get; set; }
-        public int ExperienceYears { get; set; }
-        public string City { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public string BaroNumber { get; set; }
-        public string LanguagesSpoken { get; set; }
-        public bool AvailableForProBono { get; set; }
-        public double Rating { get; set; }
-        public int TotalCasesHandled { get; set; }
-        public string Education { get; set; }
-        public bool IsActive { get; set; }
-        public int? WorkingGroupId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
+        public string City { get; set; } = string.Empty;
+        [WorkGroupValidation]
+        public string WorkGroup { get; set; } = string.Empty;
+        [TitleValidation]
+        public string Title { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; } = DateTime.UtcNow;
+        public string Languages { get; set; } = string.Empty;
+        public string Education { get; set; } = string.Empty;
+        [EmployeeRecordTypeValidation]
+        public string PrmEmployeeRecordType { get; set; } = string.Empty;
     }
 }

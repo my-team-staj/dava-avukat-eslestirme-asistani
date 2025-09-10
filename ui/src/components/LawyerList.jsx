@@ -11,6 +11,7 @@ const API_BASE = "https://localhost:60227/api";
 function LawyerList() {
   const [lawyers, setLawyers] = useState([]);
   const [cities, setCities] = useState([]);
+  const [workingGroups, setWorkingGroups] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [editingLawyerId, setEditingLawyerId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,64 +20,20 @@ function LawyerList() {
     pageSize: 5,
     city: "",
     isActive: "true",
-    availableForProBono: "",
-    sortBy: "name",
+    workGroup: "",
+    sortBy: "FullName",
     sortOrder: "asc",
     searchTerm: "",
   });
   const [searchInput, setSearchInput] = useState("");
   const [totalPages, setTotalPages] = useState(1);
 
-  const [wgMap, setWgMap] = useState({});
-  const [wgReady, setWgReady] = useState(false);
-
   // ⬇️ Silme için modal state
   const [confirm, setConfirm] = useState({ open: false, id: null });
-
-  const WG_URLS = [
-    `${API_BASE}/working-groups`,
-    `${API_BASE}/workinggroups`,
-    `${API_BASE}/workinggroup`,
-    `${API_BASE}/groups`,
-  ];
-
-  function extractArray(payload) {
-    if (!payload) return [];
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload.items)) return payload.items;
-    if (Array.isArray(payload.data)) return payload.data;
-    return [];
-  }
-  function buildWgMap(arr) {
-    const map = {};
-    for (const g of arr) {
-      const id = g?.id ?? g?.groupId ?? g?.wgId;
-      const name = g?.name ?? g?.title ?? g?.groupName ?? g?.displayName;
-      if (id != null && name) map[String(id)] = String(name);
-    }
-    return map;
-  }
-  async function loadWorkingGroups() {
-    for (const url of WG_URLS) {
-      try {
-        const res = await axios.get(url);
-        const arr = extractArray(res?.data);
-        if (arr.length) {
-          const map = buildWgMap(arr);
-          setWgMap(map);
-          setWgReady(true);
-          return;
-        }
-      } catch (_) {}
-    }
-    setWgMap({});
-    setWgReady(true);
-  }
-
-  useEffect(() => { loadWorkingGroups(); }, []);
   useEffect(() => {
     fetchLawyers();
     fetchCities();
+    fetchWorkingGroups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
@@ -117,6 +74,15 @@ function LawyerList() {
     }
   }
 
+  async function fetchWorkingGroups() {
+    try {
+      const res = await axios.get(`${API_BASE}/workinggroups`);
+      setWorkingGroups(res.data || []);
+    } catch (err) {
+      console.error("Çalışma grupları alınamadı:", err);
+    }
+  }
+
   const handlePageChange = (page) => setQuery(prev => ({ ...prev, page }));
 
   const toggleExpand = (id) => {
@@ -125,14 +91,14 @@ function LawyerList() {
     );
   };
 
-  const handleSortByName = () => {
+  const handleSortByFullName = () => {
     setQuery(prev => {
-      if (prev.sortBy === "name") {
+      if (prev.sortBy === "FullName") {
         if (prev.sortOrder === "asc")  return { ...prev, sortOrder: "desc", page: 1 };
         if (prev.sortOrder === "desc") return { ...prev, sortBy: "", sortOrder: "", page: 1 };
         return { ...prev, sortOrder: "asc", page: 1 };
       }
-      return { ...prev, sortBy: "name", sortOrder: "asc", page: 1 };
+      return { ...prev, sortBy: "FullName", sortOrder: "asc", page: 1 };
     });
   };
 
@@ -143,16 +109,12 @@ function LawyerList() {
   };
 
   const groupNameFor = (l) => {
-    const inline =
-      l?.workingGroup?.name ||
-      l?.workingGroupName ||
-      l?.workingGroupTitle;
-    if (inline) return inline;
-
-    const id = l?.workingGroupId ?? l?.workingGroupID ?? l?.groupId;
-    if (id == null) return "-";
-
-    return wgMap[String(id)] ?? (wgReady ? "-" : "Yükleniyor…");
+    // WorkingGroupId varsa workingGroups'dan isim bul, yoksa workGroup string'ini kullan
+    if (l?.workingGroupId) {
+      const wg = workingGroups.find(g => g.id === l.workingGroupId);
+      return wg?.groupName || l?.workGroup || "-";
+    }
+    return l?.workGroup || "-";
   };
 
   // ⬇️ Silme — modern onay modalı
@@ -217,20 +179,18 @@ function LawyerList() {
           </select>
         </div>
 
-        <label className="filter-checkbox">
-          <input
-            type="checkbox"
-            checked={query.availableForProBono === "true"}
-            onChange={(e) =>
-              setQuery(prev => ({
-                ...prev,
-                availableForProBono: e.target.checked ? "true" : "",
-                page: 1,
-              }))
-            }
-          />
-          Pro Bono
-        </label>
+        <div className="filter-item">
+          <label>Çalışma Grubu</label>
+          <select
+            value={query.workGroup}
+            onChange={(e) => setQuery(prev => ({ ...prev, workGroup: e.target.value, page: 1 }))}
+          >
+            <option value="">Tüm Gruplar</option>
+            {workingGroups.map(wg => (
+              <option key={wg.id} value={wg.groupName}>{wg.groupName}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Liste */}
@@ -244,18 +204,21 @@ function LawyerList() {
         <table className="case-table">
           <thead>
             <tr>
-              <th onClick={handleSortByName} style={{ cursor: "pointer" }}>
-                İsim{" "}
-                {query.sortBy === "name" &&
+              <th onClick={handleSortByFullName} style={{ cursor: "pointer" }}>
+                Ad Soyad{" "}
+                {query.sortBy === "FullName" &&
                   (query.sortOrder === "asc" ? "▲" : query.sortOrder === "desc" ? "▼" : "")}
               </th>
-              <th>Şehir</th>
-              <th>E-posta</th>
-              <th>Telefon</th>
-              <th>Baro No</th>
-              <th>Pro Bono</th>
-              <th>Puan</th>
               <th>Durum</th>
+              <th>Şehir</th>
+              <th>Çalışma Grubu</th>
+              <th>Ünvan</th>
+              <th>Telefon</th>
+              <th>E-posta</th>
+              <th>İşe Başlama</th>
+              <th>Diller</th>
+              <th>Eğitim</th>
+              <th>Kıdem</th>
               <th>İşlemler</th>
             </tr>
           </thead>
@@ -265,14 +228,17 @@ function LawyerList() {
               return (
                 <React.Fragment key={l.id}>
                   <tr>
-                    <td>{l.name}</td>
-                    <td>{l.city}</td>
-                    <td>{l.email}</td>
-                    <td>{l.phone}</td>
-                    <td>{l.baroNumber}</td>
-                    <td>{l.availableForProBono ? "Evet" : "Hayır"}</td>
-                    <td>{l.rating}</td>
+                    <td>{l.fullName}</td>
                     <td>{l.isActive ? "Aktif" : "Pasif"}</td>
+                    <td>{l.city}</td>
+                    <td>{groupNameFor(l)}</td>
+                    <td>{l.title}</td>
+                    <td>{l.phone}</td>
+                    <td>{l.email}</td>
+                    <td>{l.startDate ? new Date(l.startDate).toLocaleDateString('tr-TR') : "-"}</td>
+                    <td>{l.languages}</td>
+                    <td>{l.education}</td>
+                    <td>{l.prmEmployeeRecordType}</td>
                     <td className="actions-cell">
                       <button
                         className="btn-details"
@@ -301,13 +267,14 @@ function LawyerList() {
 
                   {isOpen && (
                     <tr>
-                      <td colSpan="9">
+                      <td colSpan="12">
                         <div style={{ background: "#f2f5fa", padding: "12px", borderRadius: "10px" }}>
                           <strong>Eğitim:</strong> {l.education || "-"} <br />
-                          <strong>Toplam Dava:</strong> {l.totalCasesHandled || 0} <br />
-                          <strong>Diller:</strong> {l.languagesSpoken || "-"} <br />
-                          <strong>Pro Bono:</strong> {l.availableForProBono ? "Evet" : "Hayır"} <br />
-                          <strong>Çalışma Grubu:</strong> {groupNameFor(l)}
+                          <strong>Diller:</strong> {l.languages || "-"} <br />
+                          <strong>Çalışma Grubu:</strong> {groupNameFor(l)} <br />
+                          <strong>Ünvan:</strong> {l.title || "-"} <br />
+                          <strong>İşe Başlama:</strong> {l.startDate ? new Date(l.startDate).toLocaleDateString('tr-TR') : "-"} <br />
+                          <strong>Kıdem:</strong> {l.prmEmployeeRecordType || "-"}
                         </div>
                       </td>
                     </tr>

@@ -23,12 +23,17 @@ public record CaseSummary(
 public record LawyerCard(
     int Id,
     string Name,
-    int ExperienceYears,
+    int ExperienceYears, // Eski alan, geriye dönük uyumluluk için korundu
     string City,
     string[] Languages,
-    bool AvailableForProBono,
-    double Rating,
-    int TotalCasesHandled,
-    int WorkingGroupId
+    bool AvailableForProBono, // Eski alan, geriye dönük uyumluluk için korundu
+    double Rating, // Eski alan, geriye dönük uyumluluk için korundu
+    int TotalCasesHandled, // Eski alan, geriye dönük uyumluluk için korundu
+    int? WorkingGroupId, // Eski alan, geriye dönük uyumluluk için korundu
+    string WorkGroup = "",
+    string Title = "",
+    DateTime StartDate = default,
+    string Education = "",
+    string PrmEmployeeRecordType = ""
 );
 

@@ -5,19 +5,17 @@ import { useToast } from "./Toast"; // ✅ toast eklendi
 const API_BASE = "https://localhost:60227/api";
 
 const initialState = {
-  name: "",
-  experienceYears: 0,
-  city: "",
-  email: "",
-  phone: "",
-  baroNumber: "",
-  languagesSpoken: "",
-  availableForProBono: false,
-  rating: 0,
-  totalCasesHandled: 0,
-  education: "",
+  fullName: "",
   isActive: true,
-  workingGroupId: "" // select için string; submit'te null/number'a çevrilecek
+  city: "",
+  workGroup: "",
+  title: "",
+  phone: "",
+  email: "",
+  startDate: new Date().toISOString().split('T')[0],
+  languages: "",
+  education: "",
+  prmEmployeeRecordType: ""
 };
 
 /**
@@ -30,7 +28,7 @@ const initialState = {
 export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
   const toast = useToast(); // ✅
   const [form, setForm] = useState(initialState);
-  const [groups, setGroups] = useState([]);
+  const [workingGroups, setWorkingGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -40,13 +38,9 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
 
     (async () => {
       try {
-        const [lawyerRes, groupsRes] = await Promise.all([
+        const [lawyerRes, workingGroupsRes] = await Promise.all([
           axios.get(`${API_BASE}/lawyers/${lawyerId}`),
-          (async () => {
-            try { return await axios.get(`${API_BASE}/WorkingGroups`); } catch {}
-            try { return await axios.get(`${API_BASE}/workinggroups`); } catch {}
-            return await axios.get(`${API_BASE}/Workinggroups`);
-          })()
+          axios.get(`${API_BASE}/workinggroups`)
         ]);
 
         if (!mounted) return;
@@ -55,19 +49,9 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
         setForm({
           ...initialState,
           ...data,
-          workingGroupId: data?.workingGroupId ?? ""
+          startDate: data?.startDate ? new Date(data.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
         });
-
-        const raw = groupsRes?.data ?? [];
-        const list = Array.isArray(raw) ? raw : (raw.items ?? []);
-        const normalized = (list || [])
-          .map(g => ({
-            id: g.id ?? g.groupId ?? g.workingGroupId,
-            name: g.name ?? g.groupName ?? g.title
-          }))
-          .filter(x => x.id && x.name);
-
-        setGroups(normalized);
+        setWorkingGroups(workingGroupsRes?.data ?? []);
       } catch {
         setError("Veriler yüklenemedi");
       } finally {
@@ -85,9 +69,7 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
       [name]:
         type === "checkbox"
           ? checked
-          : ["experienceYears", "rating", "totalCasesHandled"].includes(name)
-            ? (value === "" ? "" : Number(value))
-            : value
+          : value
     }));
   }
 
@@ -95,7 +77,7 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
     e.preventDefault();
     setError("");
 
-    if (!form.name?.trim()) return setError("İsim zorunlu");
+    if (!form.fullName?.trim()) return setError("Ad soyad zorunlu");
     if (!form.email?.trim()) return setError("E‑posta zorunlu");
     if (!/^\S+@\S+\.\S+$/.test(form.email)) return setError("Geçerli bir e‑posta girin");
 
@@ -103,8 +85,9 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
       setSaving(true);
       const payload = {
         ...form,
-        workingGroupId: form.workingGroupId === "" ? null : Number(form.workingGroupId)
+        startDate: new Date(form.startDate).toISOString()
       };
+      console.log("Gönderilen güncelleme verisi:", payload);
       await axios.put(`${API_BASE}/lawyers/${lawyerId}`, payload);
 
       // ✅ başarı tostu
@@ -113,6 +96,8 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
       if (onSaved) await onSaved();
       if (onClose) onClose();
     } catch (e2) {
+      console.error("Avukat güncellenirken hata oluştu:", e2);
+      console.error("Hata detayları:", e2?.response?.data);
       const msg =
         e2?.response?.data?.message ||
         e2?.response?.data?.error ||
@@ -132,26 +117,31 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
       {error && <div className="error-message">{error}</div>}
 
       <div className="form-grid">
-        <label htmlFor={`name-${lawyerId}`}>İsim</label>
+        <label htmlFor={`fullName-${lawyerId}`}>Ad Soyad</label>
         <input
-          id={`name-${lawyerId}`}
+          id={`fullName-${lawyerId}`}
           className="lex-form-input"
-          name="name"
-          value={form.name}
+          name="fullName"
+          value={form.fullName}
           onChange={handleChange}
           disabled={saving}
         />
 
-        <label htmlFor={`experienceYears-${lawyerId}`}>Deneyim (yıl)</label>
-        <input
-          id={`experienceYears-${lawyerId}`}
+        <label htmlFor={`title-${lawyerId}`}>Ünvan</label>
+        <select
+          id={`title-${lawyerId}`}
           className="lex-form-input"
-          type="number"
-          name="experienceYears"
-          value={form.experienceYears}
+          name="title"
+          value={form.title}
           onChange={handleChange}
           disabled={saving}
-        />
+        >
+          <option value="">-- Ünvan Seçin --</option>
+          <option value="A1">A1</option>
+          <option value="A2">A2</option>
+          <option value="Stajyer Avukat">Stajyer Avukat</option>
+          <option value="Yaz Stajyeri">Yaz Stajyeri</option>
+        </select>
 
         <label htmlFor={`city-${lawyerId}`}>Şehir</label>
         <input
@@ -184,22 +174,28 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
           disabled={saving}
         />
 
-        <label htmlFor={`baroNumber-${lawyerId}`}>Baro Numarası</label>
-        <input
-          id={`baroNumber-${lawyerId}`}
+        <label htmlFor={`workGroup-${lawyerId}`}>Çalışma Grubu</label>
+        <select
+          id={`workGroup-${lawyerId}`}
           className="lex-form-input"
-          name="baroNumber"
-          value={form.baroNumber}
+          name="workGroup"
+          value={form.workGroup}
           onChange={handleChange}
           disabled={saving}
-        />
+        >
+          <option value="">-- Çalışma Grubu Seçin --</option>
+          {workingGroups.map(wg => (
+            <option key={wg.id} value={wg.groupName}>{wg.groupName}</option>
+          ))}
+        </select>
 
-        <label htmlFor={`languagesSpoken-${lawyerId}`}>Diller</label>
+
+        <label htmlFor={`languages-${lawyerId}`}>Diller</label>
         <input
-          id={`languagesSpoken-${lawyerId}`}
+          id={`languages-${lawyerId}`}
           className="lex-form-input"
-          name="languagesSpoken"
-          value={form.languagesSpoken}
+          name="languages"
+          value={form.languages}
           onChange={handleChange}
           disabled={saving}
         />
@@ -216,28 +212,33 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
 
         
 
-        <label htmlFor={`rating-${lawyerId}`}>Puan (0‑5)</label>
+        <label htmlFor={`startDate-${lawyerId}`}>İşe Başlama Tarihi</label>
         <input
-          id={`rating-${lawyerId}`}
+          id={`startDate-${lawyerId}`}
           className="lex-form-input"
-          type="number"
-          step="0.1"
-          name="rating"
-          value={form.rating}
+          type="date"
+          name="startDate"
+          value={form.startDate}
           onChange={handleChange}
           disabled={saving}
         />
 
-        <label htmlFor={`totalCasesHandled-${lawyerId}`}>Toplam Dava</label>
-        <input
-          id={`totalCasesHandled-${lawyerId}`}
+        <label htmlFor={`prmEmployeeRecordType-${lawyerId}`}>Kıdem</label>
+        <select
+          id={`prmEmployeeRecordType-${lawyerId}`}
           className="lex-form-input"
-          type="number"
-          name="totalCasesHandled"
-          value={form.totalCasesHandled}
+          name="prmEmployeeRecordType"
+          value={form.prmEmployeeRecordType}
           onChange={handleChange}
           disabled={saving}
-        />
+        >
+          <option value="">-- Kıdem Seçin --</option>
+          <option value="Associate-Level 1">Associate-Level 1</option>
+          <option value="Associate-Level 2">Associate-Level 2</option>
+          <option value="Associate-Level 3">Associate-Level 3</option>
+          <option value="Associate-Level 4">Associate-Level 4</option>
+          <option value="Trainee-All trainees">Trainee-All trainees</option>
+        </select>
 
         <label htmlFor={`isActive-${lawyerId}`}>Aktif mi?</label>
         <input
@@ -248,30 +249,7 @@ export default function LawyerEditForm({ lawyerId, onClose, onSaved }) {
           onChange={handleChange}
           disabled={saving}
         />
-        <label htmlFor={`availableForProBono-${lawyerId}`}>Pro Bono</label>
-        <input
-          id={`availableForProBono-${lawyerId}`}
-          type="checkbox"
-          name="availableForProBono"
-          checked={form.availableForProBono}
-          onChange={handleChange}
-          disabled={saving}
-        />
 
-        <label htmlFor={`workingGroupId-${lawyerId}`}>Çalışma Grubu</label>
-        <select
-          id={`workingGroupId-${lawyerId}`}
-          className="lex-form-input"
-          name="workingGroupId"
-          value={form.workingGroupId === null ? "" : String(form.workingGroupId)}
-          onChange={handleChange}
-          disabled={saving || groups.length === 0}
-        >
-          <option value="">-- Çalışma Grubu Seçin --</option>
-          {groups.map(g => (
-            <option key={g.id} value={String(g.id)}>{g.name}</option>
-          ))}
-        </select>
       </div>
 
       <div className="form-actions">

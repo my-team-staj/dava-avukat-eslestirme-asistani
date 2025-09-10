@@ -14,7 +14,6 @@
         public DateTime FiledDate { get; set; }
         public bool IsActive { get; set; } = true;
 
-        public int? WorkingGroupId { get; set; }
-        public string? WorkingGroupName { get; set; } = string.Empty;
+        public string WorkGroup { get; set; } = string.Empty;
     }
 }

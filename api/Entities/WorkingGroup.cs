@@ -1,4 +1,4 @@
-﻿    namespace dava_avukat_eslestirme_asistani.Entities
+namespace dava_avukat_eslestirme_asistani.Entities
 {
     public class WorkingGroup
     {
@@ -14,6 +14,4 @@
 
         public virtual ICollection<Case> Cases { get; set; } = new List<Case>();
     }
-
-
 }

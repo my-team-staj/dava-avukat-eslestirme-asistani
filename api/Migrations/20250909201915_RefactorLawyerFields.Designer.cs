@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace dava_avukat_eslestirme_asistani.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250909201915_RefactorLawyerFields")]
+    partial class RefactorLawyerFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -71,10 +74,6 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UrgencyLevel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("WorkGroup")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -205,7 +204,8 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                             PrmEmployeeRecordType = "FullTime",
                             StartDate = new DateTime(2020, 1, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Title = "Kıdemli Avukat",
-                            WorkGroup = "TİCARİ DAVA"
+                            WorkGroup = "TİCARİ DAVA",
+                            WorkingGroupId = 1
                         });
                 });
 
@@ -236,51 +236,51 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Patent Hukuku",
-                            GroupName = "PATENT"
+                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Ceza davaları için uzman ekip",
+                            GroupName = "Ceza Grubu"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Araştırma ve Geliştirme",
-                            GroupName = "ARAŞTIRMA"
+                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Boşanma, velayet ve nafaka gibi konularda uzmanlık",
+                            GroupName = "Aile Hukuku Grubu"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Fikri Mülkiyet Taklit Mücadele",
-                            GroupName = "FM TAKLİTLE MÜCADELE"
+                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Şirketler ve ticari uyuşmazlıklar",
+                            GroupName = "Ticaret Hukuku Grubu"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Marka, Telif ve Tasarım Hukuku",
-                            GroupName = "MARKA, TELİF, TASARIM"
+                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "İşçi-işveren ilişkileri, tazminat davaları",
+                            GroupName = "İş Hukuku Grubu"
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Şirketler ve Sözleşmeler Hukuku",
-                            GroupName = "ŞİRKETLER ve SÖZLEŞMELER"
+                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Tapu, kat mülkiyeti ve kira sözleşmeleri",
+                            GroupName = "Gayrimenkul ve Kira Grubu"
                         },
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Tescil İşlemleri",
-                            GroupName = "TESCİL"
+                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Tüketici uyuşmazlıkları, ayıplı mal davaları",
+                            GroupName = "Tüketici Hakları Grubu"
                         },
                         new
                         {
                             Id = 7,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Ticari Dava Hukuku",
-                            GroupName = "TİCARİ DAVA"
+                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Borç tahsilatı, icra ve konkordato işlemleri",
+                            GroupName = "İcra ve İflas Grubu"
                         });
                 });
 

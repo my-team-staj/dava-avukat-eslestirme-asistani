@@ -13,7 +13,7 @@
         public DateTime FiledDate { get; set; } // PUT: zorunlu (formdan her zaman gelecek)
         public bool IsActive { get; set; } = true;
 
-        public int? WorkingGroupId { get; set; }
+        public string WorkGroup { get; set; } = string.Empty;
     }
 }
 

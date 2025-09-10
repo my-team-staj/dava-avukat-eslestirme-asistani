@@ -45,6 +45,13 @@ namespace dava_avukat_eslestirme_asistani.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateLawyer(int id, [FromBody] LawyerUpdateDto dto)
         {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid LawyerUpdateDto received for ID {Id}. Errors: {Errors}", 
+                    id, string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+                return BadRequest(ModelState);
+            }
+
             try
             {
                 var updatedLawyer = await _lawyerService.UpdateLawyerAsync(id, dto);
@@ -65,7 +72,8 @@ namespace dava_avukat_eslestirme_asistani.Controllers
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid LawyerCreateDto received.");
+                _logger.LogWarning("Invalid LawyerCreateDto received. Errors: {Errors}", 
+                    string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
                 return BadRequest(ModelState);
             }
 

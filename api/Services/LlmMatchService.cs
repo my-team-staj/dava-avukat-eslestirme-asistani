@@ -55,7 +55,7 @@ estimatedDurationDays={caseSum.EstimatedDurationInDays};
 # CANDIDATES (choose top {topK})
 {string.Join("\n", candidates.Select(c =>
     $"- id={c.Id}; name={One(c.Name)}; city={c.City}; langs=[{string.Join(",", c.Languages)}]; " +
-    $"proBono={c.AvailableForProBono}; expYears={c.ExperienceYears}; rating={c.Rating}; totalCases={c.TotalCasesHandled}; wg={c.WorkingGroupId};"))}
+    $"workGroup={c.WorkGroup}; title={c.Title}; startDate={c.StartDate:yyyy-MM-dd};"))}
 
 # INSTRUCTIONS
 - Zorunlu kurallar: şehir, dil, pro bono ve WG uyuşmayan adayı ele.

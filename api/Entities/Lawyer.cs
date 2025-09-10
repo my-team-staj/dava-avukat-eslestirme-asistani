@@ -4,34 +4,29 @@
     {
         public int Id { get; set; }
 
-        public string Name { get; set; } = string.Empty;
-
-        public int ExperienceYears { get; set; } = 0;
-
-        public string City { get; set; } = string.Empty;
-
-        public string Email { get; set; } = string.Empty;
-
-        public string Phone { get; set; } = string.Empty;
-
-        public string BaroNumber { get; set; } = string.Empty;
-
-        public string LanguagesSpoken { get; set; } = string.Empty;
-
-        public bool AvailableForProBono { get; set; } = false;
-
-        public double Rating { get; set; } = 0.0;
-
-        public int TotalCasesHandled { get; set; } = 0;
-
-        public string Education { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = true;
 
-        // Foreign Key
-        public int? WorkingGroupId { get; set; }
+        public string City { get; set; } = string.Empty;
 
-        // Navigation Property
+        public string WorkGroup { get; set; } = string.Empty;
+
+        public string Title { get; set; } = string.Empty;
+
+        public string Phone { get; set; } = string.Empty;
+
+        public string Email { get; set; } = string.Empty;
+
+        public DateTime StartDate { get; set; } = DateTime.UtcNow;
+
+        public string Languages { get; set; } = string.Empty;
+
+        public string Education { get; set; } = string.Empty;
+
+        public string PrmEmployeeRecordType { get; set; } = string.Empty;
+
+        public int? WorkingGroupId { get; set; }
         public virtual WorkingGroup? WorkingGroup { get; set; }
 
         public bool IsDeleted { get; set; }

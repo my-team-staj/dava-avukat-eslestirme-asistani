@@ -23,6 +23,6 @@ namespace dava_avukat_eslestirme_asistani.DTOs
         [Range(1, 365, ErrorMessage = "Tahmini süre 1 ile 365 gün arasında olmalıdır.")]
         public int EstimatedDurationInDays { get; set; } = 1;
         public string RequiredExperienceLevel { get; set; } = "Orta";
-        public int? WorkingGroupId { get; set; }
+        public string WorkGroup { get; set; } = string.Empty;
     }
 }

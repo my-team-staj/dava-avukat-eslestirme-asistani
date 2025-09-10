@@ -6,30 +6,34 @@ import "../App.css";
 
 function LawyerAddForm() {
   const navigate = useNavigate();
+  const [workingGroups, setWorkingGroups] = useState([]);
   const [form, setForm] = useState({
-    name: "",
-    experienceYears: 0,
-    city: "",
-    email: "",
-    phone: "",
-    baroNumber: "",
-    languagesSpoken: "",
-    availableForProBono: false,
-    rating: 0,
-    totalCasesHandled: 0,
-    education: "",
+    fullName: "",
     isActive: true,
-    workingGroupId: ""
+    city: "",
+    workGroup: "",
+    title: "",
+    phone: "",
+    email: "",
+    startDate: new Date().toISOString().split('T')[0],
+    languages: "",
+    education: "",
+    prmEmployeeRecordType: ""
   });
 
-  const [workingGroups, setWorkingGroups] = useState([]);
 
   useEffect(() => {
-    axios
-      .get("https://localhost:60227/api/workinggroups")
-      .then((res) => setWorkingGroups(res.data))
-      .catch((err) => console.error("Çalışma grupları alınamadı", err));
+    fetchWorkingGroups();
   }, []);
+
+  async function fetchWorkingGroups() {
+    try {
+      const res = await axios.get("https://localhost:60227/api/workinggroups");
+      setWorkingGroups(res.data || []);
+    } catch (err) {
+      console.error("Çalışma grupları alınamadı:", err);
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -43,24 +47,24 @@ function LawyerAddForm() {
     e.preventDefault();
 
     try {
-      await axios.post("https://localhost:60227/api/lawyers", form);
+      console.log("Gönderilen form verisi:", form);
+      const response = await axios.post("https://localhost:60227/api/lawyers", form);
+      console.log("API yanıtı:", response.data);
       toast.success("✅ Avukat başarıyla eklendi!");
       
       // Formu temizle
       setForm({
-        name: "",
-        experienceYears: 0,
-        city: "",
-        email: "",
-        phone: "",
-        baroNumber: "",
-        languagesSpoken: "",
-        availableForProBono: false,
-        rating: 0,
-        totalCasesHandled: 0,
-        education: "",
+        fullName: "",
         isActive: true,
-        workingGroupId: ""
+        city: "",
+        workGroup: "",
+        title: "",
+        phone: "",
+        email: "",
+        startDate: new Date().toISOString().split('T')[0],
+        languages: "",
+        education: "",
+        prmEmployeeRecordType: ""
       });
 
       // Başarılı kayıt sonrası avukat listesine yönlendir
@@ -69,8 +73,9 @@ function LawyerAddForm() {
       }, 1500); // 1.5 saniye bekle ki kullanıcı başarı mesajını görebilsin
       
     } catch (err) {
-      console.error(err);
-      toast.error("❌ Kayıt sırasında hata oluştu.");
+      console.error("Avukat eklenirken hata oluştu:", err);
+      console.error("Hata detayları:", err.response?.data);
+      toast.error("❌ Avukat eklenirken hata oluştu: " + (err.response?.data?.message || err.message));
       // Hata durumunda yönlendirme yapma
     }
   };
@@ -80,31 +85,34 @@ function LawyerAddForm() {
       <h2>Avukat Ekle</h2>
 
       <div className="lex-form-row">
-        <label htmlFor="name">İsim Soyisim*</label>
+        <label htmlFor="fullName">Ad Soyad*</label>
         <input
           type="text"
           className="lex-form-input"
-          id="name"
-          name="name"
+          id="fullName"
+          name="fullName"
           placeholder="Örn: Av. Ayşe Demir"
-          value={form.name}
+          value={form.fullName}
           onChange={handleChange}
           required
         />
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="experienceYears">Deneyim Yılı</label>
-        <input
-          type="number"
+        <label htmlFor="title">Ünvan</label>
+        <select
           className="lex-form-input"
-          id="experienceYears"
-          name="experienceYears"
-          placeholder="Örn: 5"
-          value={form.experienceYears}
+          id="title"
+          name="title"
+          value={form.title}
           onChange={handleChange}
-          min="0"
-        />
+        >
+          <option value="">-- Ünvan Seçin --</option>
+          <option value="A1">A1</option>
+          <option value="A2">A2</option>
+          <option value="Stajyer Avukat">Stajyer Avukat</option>
+          <option value="Yaz Stajyeri">Yaz Stajyeri</option>
+        </select>
       </div>
 
       <div className="lex-form-row">
@@ -149,58 +157,63 @@ function LawyerAddForm() {
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="baroNumber">Baro No</label>
-        <input
-          type="text"
+        <label htmlFor="workGroup">Çalışma Grubu</label>
+        <select
           className="lex-form-input"
-          id="baroNumber"
-          name="baroNumber"
-          placeholder="Örn: 34521"
-          value={form.baroNumber}
+          id="workGroup"
+          name="workGroup"
+          value={form.workGroup}
           onChange={handleChange}
-        />
+        >
+          <option value="">-- Çalışma Grubu Seçin --</option>
+          {workingGroups.map(wg => (
+            <option key={wg.id} value={wg.groupName}>{wg.groupName}</option>
+          ))}
+        </select>
       </div>
 
+
       <div className="lex-form-row">
-        <label htmlFor="languagesSpoken">Konuşulan Diller</label>
+        <label htmlFor="languages">Diller</label>
         <input
           type="text"
           className="lex-form-input"
-          id="languagesSpoken"
-          name="languagesSpoken"
+          id="languages"
+          name="languages"
           placeholder="Türkçe, İngilizce"
-          value={form.languagesSpoken}
+          value={form.languages}
           onChange={handleChange}
         />
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="rating">Puan (0-5)</label>
+        <label htmlFor="startDate">İşe Başlama Tarihi</label>
         <input
-          type="number"
+          type="date"
           className="lex-form-input"
-          id="rating"
-          name="rating"
-          value={form.rating}
+          id="startDate"
+          name="startDate"
+          value={form.startDate}
           onChange={handleChange}
-          min="0"
-          max="5"
-          step="0.1"
         />
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="totalCasesHandled">Toplam Dava</label>
-        <input
-          type="number"
+        <label htmlFor="prmEmployeeRecordType">Kıdem</label>
+        <select
           className="lex-form-input"
-          id="totalCasesHandled"
-          name="totalCasesHandled"
-          placeholder="Örn: 42"
-          value={form.totalCasesHandled}
+          id="prmEmployeeRecordType"
+          name="prmEmployeeRecordType"
+          value={form.prmEmployeeRecordType}
           onChange={handleChange}
-          min="0"
-        />
+        >
+          <option value="">-- Kıdem Seçin --</option>
+          <option value="Associate-Level 1">Associate-Level 1</option>
+          <option value="Associate-Level 2">Associate-Level 2</option>
+          <option value="Associate-Level 3">Associate-Level 3</option>
+          <option value="Associate-Level 4">Associate-Level 4</option>
+          <option value="Trainee-All trainees">Trainee-All trainees</option>
+        </select>
       </div>
 
       <div className="lex-form-row">
@@ -216,34 +229,17 @@ function LawyerAddForm() {
         />
       </div>
 
-      <div className="lex-form-row">
-        <label htmlFor="workingGroupId">Çalışma Grubu</label>
-        <select
-          className="lex-form-input"
-          id="workingGroupId"
-          name="workingGroupId"
-          value={form.workingGroupId}
-          onChange={handleChange}
-        >
-          <option value="">-- Çalışma Grubu Seçin --</option>
-          {workingGroups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.groupName}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className="lex-form-row">
         <input
           type="checkbox"
-          id="availableForProBono"
-          name="availableForProBono"
-          checked={form.availableForProBono}
+          id="isActive"
+          name="isActive"
+          checked={form.isActive}
           onChange={handleChange}
         />
-        <label htmlFor="availableForProBono" style={{ marginLeft: 8, fontWeight: 500 }}>
-          Pro Bono Hizmet Verebilir
+        <label htmlFor="isActive" style={{ marginLeft: 8, fontWeight: 500 }}>
+          Aktif
         </label>
       </div>
 

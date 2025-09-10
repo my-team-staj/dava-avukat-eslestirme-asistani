@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace dava_avukat_eslestirme_asistani.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250909205447_UpdateWorkingGroupNames")]
+    partial class UpdateWorkingGroupNames
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -236,49 +239,49 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 9, 9, 20, 54, 46, 448, DateTimeKind.Utc).AddTicks(9733),
                             GroupDescription = "Patent Hukuku",
                             GroupName = "PATENT"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 9, 9, 20, 54, 46, 449, DateTimeKind.Utc).AddTicks(266),
                             GroupDescription = "Araştırma ve Geliştirme",
                             GroupName = "ARAŞTIRMA"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 9, 9, 20, 54, 46, 449, DateTimeKind.Utc).AddTicks(270),
                             GroupDescription = "Fikri Mülkiyet Taklit Mücadele",
                             GroupName = "FM TAKLİTLE MÜCADELE"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 9, 9, 20, 54, 46, 449, DateTimeKind.Utc).AddTicks(272),
                             GroupDescription = "Marka, Telif ve Tasarım Hukuku",
                             GroupName = "MARKA, TELİF, TASARIM"
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 9, 9, 20, 54, 46, 449, DateTimeKind.Utc).AddTicks(277),
                             GroupDescription = "Şirketler ve Sözleşmeler Hukuku",
                             GroupName = "ŞİRKETLER ve SÖZLEŞMELER"
                         },
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 9, 9, 20, 54, 46, 449, DateTimeKind.Utc).AddTicks(279),
                             GroupDescription = "Tescil İşlemleri",
                             GroupName = "TESCİL"
                         },
                         new
                         {
                             Id = 7,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2025, 9, 9, 20, 54, 46, 449, DateTimeKind.Utc).AddTicks(282),
                             GroupDescription = "Ticari Dava Hukuku",
                             GroupName = "TİCARİ DAVA"
                         });
