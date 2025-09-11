@@ -13,123 +13,109 @@ namespace dava_avukat_eslestirme_asistani.Services
         private readonly AppDbContext _db;
         public CandidateQueryService(AppDbContext db) => _db = db;
 
-        private static string Normalize(string s) => (s ?? string.Empty).Trim().ToLowerInvariant();
-
-        private static string[] TokenizeLangs(string? langs)
-        {
-            if (string.IsNullOrWhiteSpace(langs)) return Array.Empty<string>();
-            return langs.Split(new[] { ',', ';', '|', '/', ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(x => x.Trim())
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                        .ToArray();
-        }
-
         /// <summary>
         /// Case özetini ve LLM'e verilecek aday avukat kartlarını döndürür.
-        /// SQL: şehir + pro bono + (WG varsa) + aktif; Bellek: dil eşleşmesi.
+        /// SQL: şehir + soft delete dışı; Bellek: sıralama.
         /// </summary>
         public async Task<(CaseSummary caseSum, List<LawyerCard> candidates)> BuildAsync(int caseId, int take = 30)
         {
             // 1) CASE
             var c = await _db.Cases.AsNoTracking()
-                .Where(x => x.Id == caseId && x.IsActive)
+                .Where(x => x.Id == caseId && !x.IsDeleted)
                 .Select(x => new
                 {
                     x.Id,
-                    x.Title,
-                    x.Description,
+                    x.ContactClient,
+                    x.FileSubject,
+                    x.CaseResponsible,
+                    x.PrmNatureOfAssignment,
+                    x.PrmCasePlaceofUseSubject,
+                    x.SubjectMatterDescription,
+                    x.IsToBeInvoiced,
                     x.City,
-                    x.Language,
-                    x.UrgencyLevel,              // string
-                    x.RequiresProBono,           // bool
-                    x.WorkingGroupId,            // int?
-                    x.RequiredExperienceLevel,   // string
-                    x.EstimatedDurationInDays    // int
+                    x.Description,
+                    x.Country,
+                    x.County,
+                    x.Address,
+                    x.Attorney1,
+                    x.Attorney2,
+                    x.Attorney3
                 })
                 .FirstOrDefaultAsync();
 
             if (c is null)
-                throw new KeyNotFoundException($"Case {caseId} bulunamadı ya da pasif.");
+                throw new KeyNotFoundException($"Case {caseId} bulunamadı ya da silinmiş.");
 
             // 2) SQL ön-daraltma
             const int SQL_TAKE = 200;
             var q = _db.Lawyers.AsNoTracking()
-                .Where(l => l.IsActive)
-                .Where(l => l.City == c.City)
-                .Where(l => l.AvailableForProBono == c.RequiresProBono);
+                .Where(l => !l.IsDeleted)
+                .Where(l => l.City == c.City);
 
-            if (c.WorkingGroupId.HasValue)
-                q = q.Where(l => l.WorkingGroupId == c.WorkingGroupId.Value);
+            var now = DateTime.UtcNow;
 
             var sqlCandidates = await q
-                .OrderByDescending(l => l.Rating)
-                .ThenByDescending(l => l.TotalCasesHandled)
-                .ThenByDescending(l => l.ExperienceYears)
-                .Take(SQL_TAKE)
                 .Select(l => new
                 {
                     l.Id,
-                    l.Name,
-                    l.ExperienceYears,
+                    l.FullName,
                     l.City,
-                    l.LanguagesSpoken,
-                    l.AvailableForProBono,
-                    l.Rating,                // double veya double?
-                    l.TotalCasesHandled,     // int
-                    l.WorkingGroupId         // int?
+                    l.Languages,
+                    l.Title,
+                    l.Education,
+                    l.WorkingGroupId,
+                    WorkGroupName = l.WorkingGroup != null ? l.WorkingGroup.GroupName : null,
+                    IsActive = l.IsActive,
+                    ExperienceYears = l.StartDate.HasValue
+                        ? EF.Functions.DateDiffYear(l.StartDate.Value, now)
+                        : 0
                 })
+                .OrderByDescending(l => l.IsActive)
+                .ThenByDescending(l => l.ExperienceYears)
+                .ThenBy(l => l.FullName)
+                .Take(SQL_TAKE)
                 .ToListAsync();
 
-            // 3) Dil eşleşmesi (token bazlı)
-            var wantedLang = Normalize(c.Language ?? string.Empty);
-
-            var langMatched = sqlCandidates
-                .Select(l => new
-                {
-                    l.Id,
-                    l.Name,
-                    l.ExperienceYears,
-                    l.City,
-                    Tokens = TokenizeLangs(l.LanguagesSpoken).Select(Normalize).ToArray(),
-                    l.AvailableForProBono,
-                    Rating = l.Rating, // varsayılan double; tipin farklıysa EF entity'ine göre ayarla
-                    l.TotalCasesHandled,
-                    WG = l.WorkingGroupId ?? 0
-                })
-                .Where(l => string.IsNullOrEmpty(wantedLang) || l.Tokens.Contains(wantedLang))
-                .ToList();
-
-            // 4) Heuristik sıralama ve top-N
-            var finalCandidates = langMatched
-                .OrderByDescending(l => l.Rating)
-                .ThenByDescending(l => l.TotalCasesHandled)
+            // 3) Heuristik sıralama ve top-N
+            var finalCandidates = sqlCandidates
+                .OrderByDescending(l => l.IsActive)
                 .ThenByDescending(l => l.ExperienceYears)
+                .ThenBy(l => l.FullName)
                 .Take(take)
                 .Select(l => new LawyerCard(
                     Id: l.Id,
-                    Name: l.Name ?? string.Empty,
+                    FullName: l.FullName ?? string.Empty,
                     ExperienceYears: l.ExperienceYears,
                     City: l.City ?? string.Empty,
-                    Languages: l.Tokens,
-                    AvailableForProBono: l.AvailableForProBono,
-                    Rating: l.Rating,
-                    TotalCasesHandled: l.TotalCasesHandled,
-                    WorkingGroupId: l.WG
+                    Languages: string.IsNullOrWhiteSpace(l.Languages)
+                        ? Array.Empty<string>()
+                        : l.Languages.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                     .Select(s => s.Trim()).ToArray(),
+                    Title: l.Title,
+                    Education: l.Education,
+                    WorkGroupId: l.WorkingGroupId ?? 0,
+                    WorkGroup: l.WorkGroupName
                 ))
                 .ToList();
 
-            // 5) CaseSummary
+            // 4) CaseSummary
             var caseSum = new CaseSummary(
                 Id: c.Id,
-                Title: c.Title ?? string.Empty,
-                Description: c.Description ?? string.Empty,
+                ContactClient: c.ContactClient ?? string.Empty,
+                FileSubject: c.FileSubject ?? string.Empty,
+                CaseResponsible: c.CaseResponsible ?? string.Empty,
+                PrmNatureOfAssignment: c.PrmNatureOfAssignment ?? string.Empty,
+                PrmCasePlaceofUseSubject: c.PrmCasePlaceofUseSubject ?? string.Empty,
+                SubjectMatterDescription: c.SubjectMatterDescription ?? string.Empty,
+                IsToBeInvoiced: c.IsToBeInvoiced,
                 City: c.City ?? string.Empty,
-                Language: c.Language ?? string.Empty,
-                UrgencyLevel: c.UrgencyLevel ?? "Normal",
-                RequiresProBono: c.RequiresProBono,
-                WorkingGroupId: c.WorkingGroupId,
-                RequiredExperienceLevel: c.RequiredExperienceLevel ?? "Orta",
-                EstimatedDurationInDays: c.EstimatedDurationInDays
+                Description: c.Description ?? string.Empty,
+                Country: c.Country,
+                County: c.County,
+                Address: c.Address,
+                Attorney1: c.Attorney1,
+                Attorney2: c.Attorney2,
+                Attorney3: c.Attorney3
             );
 
             return (caseSum, finalCandidates);

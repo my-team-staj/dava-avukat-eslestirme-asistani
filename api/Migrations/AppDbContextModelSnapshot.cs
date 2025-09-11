@@ -29,8 +29,34 @@ namespace dava_avukat_eslestirme_asistani.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Attorney1")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Attorney2")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Attorney3")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CaseResponsible")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("City")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactClient")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("County")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -43,34 +69,25 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("EstimatedDurationInDays")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("FiledDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                    b.Property<string>("FileSubject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Language")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RequiredExperienceLevel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("RequiresProBono")
+                    b.Property<bool>("IsToBeInvoiced")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Title")
+                    b.Property<string>("PrmCasePlaceofUseSubject")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UrgencyLevel")
+                    b.Property<string>("PrmNatureOfAssignment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubjectMatterDescription")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -126,13 +143,6 @@ namespace dava_avukat_eslestirme_asistani.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("AvailableForProBono")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("BaroNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("City")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -144,15 +154,15 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Education")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ExperienceYears")
-                        .HasColumnType("int");
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -160,23 +170,21 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LanguagesSpoken")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<string>("Languages")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("Rating")
-                        .HasColumnType("float");
+                    b.Property<string>("PrmEmployeeRecordType")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("TotalCasesHandled")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("WorkingGroupId")
                         .HasColumnType("int");
@@ -191,19 +199,17 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                         new
                         {
                             Id = 1,
-                            AvailableForProBono = true,
-                            BaroNumber = "123456",
                             City = "Ankara",
                             Education = "Ankara Üniversitesi Hukuk Fakültesi",
                             Email = "berat.calik@gun.av.tr",
-                            ExperienceYears = 5,
+                            FullName = "Av. Berat Çalık",
                             IsActive = true,
                             IsDeleted = false,
-                            LanguagesSpoken = "Türkçe",
-                            Name = "Av. Berat",
+                            Languages = "Türkçe, İngilizce",
                             Phone = "05367750225",
-                            Rating = 4.7999999999999998,
-                            TotalCasesHandled = 80,
+                            PrmEmployeeRecordType = "Associate",
+                            StartDate = new DateTime(2020, 9, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Title = "Avukat",
                             WorkingGroupId = 1
                         });
                 });
@@ -235,61 +241,59 @@ namespace dava_avukat_eslestirme_asistani.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Ceza davaları için uzman ekip",
-                            GroupName = "Ceza Grubu"
+                            CreatedAt = new DateTime(2025, 9, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Patent işleri",
+                            GroupName = "PATENT"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Boşanma, velayet ve nafaka gibi konularda uzmanlık",
-                            GroupName = "Aile Hukuku Grubu"
+                            CreatedAt = new DateTime(2025, 9, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Araştırma ve inceleme işleri",
+                            GroupName = "ARAŞTIRMA"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Şirketler ve ticari uyuşmazlıklar",
-                            GroupName = "Ticaret Hukuku Grubu"
+                            CreatedAt = new DateTime(2025, 9, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Taklit ürünlere karşı mücadele",
+                            GroupName = "FM TAKLİTLE MÜCADELE"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "İşçi-işveren ilişkileri, tazminat davaları",
-                            GroupName = "İş Hukuku Grubu"
+                            CreatedAt = new DateTime(2025, 9, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Marka, telif ve tasarım hukuku",
+                            GroupName = "MARKA, TELİF, TASARIM"
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Tapu, kat mülkiyeti ve kira sözleşmeleri",
-                            GroupName = "Gayrimenkul ve Kira Grubu"
+                            CreatedAt = new DateTime(2025, 9, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Şirketler hukuku ve sözleşmeler",
+                            GroupName = "ŞİRKETLER ve SÖZLEŞMELER"
                         },
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Tüketici uyuşmazlıkları, ayıplı mal davaları",
-                            GroupName = "Tüketici Hakları Grubu"
+                            CreatedAt = new DateTime(2025, 9, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Tescil işlemleri",
+                            GroupName = "TESCİL"
                         },
                         new
                         {
                             Id = 7,
-                            CreatedAt = new DateTime(2025, 8, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            GroupDescription = "Borç tahsilatı, icra ve konkordato işlemleri",
-                            GroupName = "İcra ve İflas Grubu"
+                            CreatedAt = new DateTime(2025, 9, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            GroupDescription = "Ticari davalar",
+                            GroupName = "TİCARİ DAVA"
                         });
                 });
 
             modelBuilder.Entity("dava_avukat_eslestirme_asistani.Entities.Case", b =>
                 {
-                    b.HasOne("dava_avukat_eslestirme_asistani.Entities.WorkingGroup", "WorkingGroup")
+                    b.HasOne("dava_avukat_eslestirme_asistani.Entities.WorkingGroup", null)
                         .WithMany("Cases")
                         .HasForeignKey("WorkingGroupId");
-
-                    b.Navigation("WorkingGroup");
                 });
 
             modelBuilder.Entity("dava_avukat_eslestirme_asistani.Entities.Lawyer", b =>

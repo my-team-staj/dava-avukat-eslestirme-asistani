@@ -3567,3 +3567,617 @@ h2 {
   border-radius: 12px;
   min-width: 140px;
 }
+
+/* Formu genişlet ve ortala */
+.lex-form.lex-form--wide {
+  max-width: 920px;
+  margin: 24px auto;
+  padding: 24px 28px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+}
+
+.lex-form-title {
+  margin: 0 0 18px 0;
+  text-align: left;
+}
+
+/* Her satırı iki kolonlu hizala: label | input */
+.lex-form-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 10px 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.lex-form-input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+/* Checkbox alanını input gibi göster */
+.lex-checkbox-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  min-height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.lex-form-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lex-form-btn {
+  appearance: none;
+  border: 0;
+  background: linear-gradient(90deg, #6a5cff, #2ec5ff);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Mobilde tek kolona düşsün */
+@media (max-width: 720px) {
+  .lex-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Arama kutulu select'in kökü */
+.combo-root,
+.multiselect-root {
+  position: relative;          /* paneli bu elemana göre konumlandıracağız */
+}
+
+/* Açılır panel (liste) – her iki bileşen için ortak */
+.combo-panel,
+.multiselect-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);        /* normalde aşağı aç */
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.10);
+  /* 💡 asıl kritikler: */
+  max-height: 260px;            /* fazla uzamasın */
+  overflow-y: auto;             /* içeride scroll çıksın */
+}
+
+/* Altta yer kalmadığında “yukarı” açılma */
+.combo-panel.dropup,
+.multiselect-panel.dropup {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+/* Arama input'u için minik padding */
+.combo-search,
+.multiselect-search {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.combo-option,
+.multiselect-option {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.combo-option:hover,
+.multiselect-option:hover {
+  background: #f7f9fc;
+}
+
+/* Form kapsayıcı panel seçenekleri kesmesin */
+.lex-form { overflow: visible; }
+.sselect, .smulti { position: relative; }
+.sselect-control {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px; padding:10px 12px; border:1px solid #dce3ee; border-radius:10px;
+  background:#fff; cursor:pointer;
+}
+.sselect-value.placeholder { color:#9aa7b6; }
+.sselect-caret { opacity:.6; }
+
+.sselect-menu {
+  background:#fff; box-shadow:0 12px 28px rgba(16,24,40,.14), 0 2px 8px rgba(16,24,40,.08);
+  border-radius:12px; overflow:hidden;
+}
+.sselect-search { padding:8px; border-bottom:1px solid #eef2f7; }
+.sselect-search input { width:100%; padding:8px 10px; border:1px solid #e3e8f0; border-radius:8px; }
+.sselect-options { padding:6px 0; }
+.sselect-option { padding:10px 12px; cursor:pointer; }
+.sselect-option:hover { background:#f5f8ff; }
+.sselect-option.selected { background:#eef5ff; font-weight:600; }
+.sselect-option.chk { display:flex; gap:8px; align-items:center; }
+.sselect-empty { padding:12px; color:#93a1b2; }
+
+/* -- Aramalı select ortak kap -- */
+.searchable-field {
+  width: 100%;
+}
+
+/* Tetik butonu */
+.searchable-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d6dbe6;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.searchable-trigger:hover {
+  border-color: #c2c8d6;
+}
+.searchable-trigger.open {
+  border-color: #8aa5ff;
+  box-shadow: 0 0 0 3px rgba(109, 132, 255, 0.12);
+}
+.searchable-trigger-text.placeholder {
+  color: #9aa3b2;
+}
+.searchable-caret {
+  opacity: 0.7;
+}
+
+/* Dropdown */
+.searchable-select-dropdown,
+.searchable-multi-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #fff;
+  border: 1px solid #d6dbe6;
+  border-radius: 10px;
+  overflow-y: auto;
+  box-shadow: 0 8px 28px rgba(16, 24, 40, 0.15);
+  z-index: 1200; /* <- form, footer, modal vs. üstünde */
+}
+
+/* Arama girişi */
+.searchable-input-wrap {
+  padding: 8px;
+  border-bottom: 1px solid #eef1f6;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+.searchable-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d6dbe6;
+  border-radius: 8px;
+}
+
+/* Liste */
+.searchable-options {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+}
+.searchable-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.searchable-option:hover,
+.searchable-option.active {
+  background: #f4f6fb;
+}
+.searchable-option.selected {
+  background: #eef2ff;
+}
+.searchable-option input[type="checkbox"] {
+  accent-color: #4f46e5;
+  transform: translateY(1px);
+}
+.searchable-empty {
+  padding: 14px;
+  color: #9aa3b2;
+}
+
+/* Form konteynerı dropdownları kesmesin */
+.lex-form,
+.lex-form-row {
+  overflow: visible !important;
+}
+
+/* Modal kullanıyorsan önerilen z-index katmanları
+.modal-overlay { z-index: 1000; }
+.modal-card    { z-index: 1100; }
+*/
+/* select container */
+.select-root { position: relative; }
+
+/* trigger */
+.select-control {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px 36px 8px 12px;
+  text-align: left;
+}
+.select-control:focus { outline: 2px solid #8ab4f8; }
+
+/* caret */
+.select-caret { float: right; opacity: .6; }
+
+/* PORTAL MENÜ (EN ÖNDE) */
+.select-popover {
+  max-height: 260px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.12),
+    0 2px 8px rgba(0,0,0,.08);
+  z-index: 10000; /* kritik */
+}
+
+/* search bar */
+.select-search { padding: 8px; border-bottom: 1px solid #f1f5f9; }
+.select-search input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+/* menu options */
+.select-menu { padding: 6px; }
+.select-option {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  background: transparent; border: 0; text-align: left; cursor: pointer;
+}
+.select-option:hover { background: #f8fafc; }
+.select-option.selected { background: #eef2ff; }
+
+/* multi actions */
+.select-actions {
+  display: flex; justify-content: space-between; padding: 6px 8px 8px;
+  border-top: 1px solid #f1f5f9;
+}
+.btn-small { padding: 6px 10px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; }
+.btn-small.ghost { background: transparent; }
+
+.lex-form { overflow: visible; }            /* ana form clip yapmasın */
+footer, .footer, .site-footer { z-index: 1; } /* footer üstte kalmasın */
+
+/* Caret hizalama — bütün aramalı select'lerde ortak */
+.select-root {
+  position: relative;
+}
+
+.select-control {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 36px 0 12px;   /* sağda caret için boşluk */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.select-placeholder.muted {
+  color: #6b7280; /* seçiliyken placeholder'ı biraz soluk göster */
+}
+
+.select-caret {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+/* Chips (etiketler) — çoklu seçim altında gösteriliyor */
+.select-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eef2ff;  /* yumuşak mavi */
+  color: #1f2937;
+  font-size: 12px;
+}
+
+.chip .chip-x {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.chip .chip-x:hover { color: #111827; }
+
+/* Popover menü — görünürlük ve kaydırma */
+.select-popover {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(35, 46, 60, 0.18);
+  max-height: 320px;
+  overflow: hidden;
+}
+
+.select-search {
+  padding: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.select-search input {
+  width: 100%;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0 10px;
+}
+
+.select-menu {
+  max-height: 260px;
+  overflow: auto;
+  padding: 6px 0;
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.select-option:hover { background: #f8fafc; }
+
+.select-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-small {
+  height: 30px;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #4f46e5;
+  border: 1px solid #4338ca;
+  color: #fff;
+}
+.btn-small.ghost {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+/* Maske uygulanmış alanlara hafif ipucu görünümü */
+.masked {
+  font-family: inherit;
+  letter-spacing: 0.3px;
+  position: relative;
+}
+.masked[data-hint]::after {
+  content: attr(data-hint);
+  color: #6b7280; /* gray-500 */
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+/* === Match sayfası üst kontrol barı === */
+.match-controls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.match-actions {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 8px;
+  /* buton ve select taşmasın */
+  max-width: 100%;
+}
+
+.match-actions .lex-form-input,
+.match-actions select {
+  /* select kutusu kart dışına taşmasın */
+  max-width: 180px;
+  width: auto;
+}
+
+.match-actions .btn-ai {
+  white-space: nowrap;
+}
+
+/* Kart/Container güvenliği */
+.lex-form.lex-form--wide,
+.form-card,
+.container {
+  overflow: visible; /* açılır menüler kesilmesin */
+}
+
+/* Daha dar ekranlarda alt alta dizilsin */
+@media (max-width: 992px) {
+  .match-controls {
+    grid-template-columns: 1fr;
+  }
+  .match-actions {
+    grid-auto-flow: row;
+    justify-items: start;
+  }
+  .match-actions .lex-form-input,
+  .match-actions select {
+    max-width: 100%;
+  }
+}
+
+/* === MatchPage üst kontrol şeridi düzeni === */
+.match-container{
+  max-width: 1040px;        /* kart genişliği */
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.match-controls{
+  display: flex;
+  flex-wrap: wrap;          /* taşma olursa alta insin */
+  align-items: flex-end;
+  gap: 16px;                /* aralıklar */
+}
+
+/* her control-group tam genişlik alır; yeterince yer varsa yan yana */
+.match-controls .control-group{
+  flex: 1 1 420px;          /* büyük ekranda geniş, küçülünce kırılır */
+  min-width: 260px;
+}
+
+/* native select / input taşmasın */
+.match-controls .control-group .form-select,
+.match-controls .control-group select,
+.match-controls .control-group input{
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* “Öneri Sayısı” kutusunu daha dar tutar (isteğe bağlı) */
+#topK.form-select{
+  max-width: 220px;
+}
+
+/* Buton soldakilerden bağımsız sabit genişlikte kalsın */
+.match-controls .match-button{
+  flex: 0 0 auto;
+  height: 40px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+/* Masaüstünde her şey tek satıra sığmadığında kırılma düzgün görünsün */
+@media (max-width: 1100px){
+  .match-controls .control-group{ flex: 1 1 320px; }
+}
+@media (max-width: 720px){
+  .match-controls .control-group{ flex: 1 1 100%; }
+  .match-controls .match-button{ width: 100%; }
+}
+/* --- MatchPage küçük UI iyileştirmeleri --- */
+
+.match-controls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.control-group.control-inline .inline-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.match-button.compact {
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+/* Sorumlu başlığını kaldırıp chip görünümü */
+.case-details .chip {
+  display: inline-block;
+  background: var(--card-bg, #f8fafc);
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  color: var(--text, #111827);
+}
+
+/* Skor detay butonunu pill/modern yap */
+.pill-toggle {
+  margin-left: auto;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  transition: all .15s ease;
+}
+.pill-toggle:hover { background: #f9fafb; }
+.pill-toggle.active {
+  border-color: var(--primary, #4f46e5);
+  color: var(--primary, #4f46e5);
+  background: #eef2ff;
+}
+
+/* Küçük ekranlarda taşmayı önle */
+@media (max-width: 768px) {
+  .match-controls {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .control-group.control-inline .inline-wrap {
+    flex-wrap: wrap;
+  }
+  .match-button.compact {
+    width: 100%;
+  }
+}
+/* MatchPage — öneri sayısı ve butonu yan yana */
+.inline-control {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.inline-control .form-select {
+  min-width: 140px;
+}

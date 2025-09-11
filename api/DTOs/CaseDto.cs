@@ -3,18 +3,26 @@
     public class CaseDto
     {
         public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string City { get; set; } = string.Empty;
-        public string Language { get; set; } = "Türkçe";
-        public string UrgencyLevel { get; set; } = "Normal";
-        public bool RequiresProBono { get; set; } = false;
-        public int EstimatedDurationInDays { get; set; } = 1;
-        public string RequiredExperienceLevel { get; set; } = "Orta";
-        public DateTime FiledDate { get; set; }
-        public bool IsActive { get; set; } = true;
 
-        public int? WorkingGroupId { get; set; }
-        public string? WorkingGroupName { get; set; } = string.Empty;
+        // === Zorunlu Alanlar ===
+        public string ContactClient { get; set; } = string.Empty;
+        public string FileSubject { get; set; } = string.Empty;
+        public string CaseResponsible { get; set; } = string.Empty;
+        public string PrmNatureOfAssignment { get; set; } = string.Empty;
+        public string PrmCasePlaceofUseSubject { get; set; } = string.Empty;
+        public string SubjectMatterDescription { get; set; } = string.Empty;
+        public bool IsToBeInvoiced { get; set; } = false;
+        public string City { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+
+        // === Opsiyonel Alanlar ===
+        public string? Country { get; set; }
+        public string? County { get; set; }
+        public string? Address { get; set; }
+        public string? Attorney1 { get; set; }
+        public string? Attorney2 { get; set; }
+        public string? Attorney3 { get; set; }
+
+        // Soft delete alanları DTO’da genelde olmaz, ama ileride gerekirse eklenebilir.
     }
 }

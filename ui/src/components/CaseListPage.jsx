@@ -8,24 +8,46 @@ import ConfirmDialog from "./ConfirmDialog";
 
 const API_BASE = "https://localhost:60227/api";
 
+// 🔐 Kelime bazlı maskeleme:
+// - 3'ten uzun kelimelerde: ilk 3 harf + geri kalanı * (ör. "Ahmet" -> "Ahm**")
+// - 3 veya daha kısa kelimelerde: sadece SON harf * (ör. "Ali" -> "Al*", "Ay" -> "A*", "A" -> "*")
+function maskName(input) {
+  if (!input) return "-";
+  // Çoklu boşlukları tek boşluğa indir
+  return String(input)
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      const len = [...word].length; // Türkçe karakterleri doğru sayabilmek için
+      if (len === 0) return "";
+      if (len <= 3) {
+        // son harfi yıldızla
+        const chars = [...word];
+        chars[len - 1] = "*";
+        return chars.join("");
+      }
+      const chars = [...word];
+      const head = chars.slice(0, 3).join("");
+      const masked = "*".repeat(len - 3);
+      return head + masked;
+    })
+    .join(" ");
+}
+
 export default function CaseListPage() {
   const [cases, setCases] = useState([]);
   const [cities, setCities] = useState([]);
-  const [languages, setLanguages] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Yeni query: sadece city + search + sort + paging
   const [query, setQuery] = useState({
     page: 1,
     pageSize: 5,
     city: "",
-    language: "",
-    urgencyLevel: "",
-    isActive: "true",
-    requiresProBono: "",
-    sortBy: "filedDate",
-    sortOrder: "desc",
+    sortBy: "filesubject", // filesubject | city | contactclient | istobeinvoiced
+    sortOrder: "desc",     // asc | desc
     searchTerm: "",
   });
   const [searchInput, setSearchInput] = useState("");
@@ -33,7 +55,7 @@ export default function CaseListPage() {
   const [selectedCase, setSelectedCase] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ⬇️ Silme için modal state
+  // Silme için modal state
   const [confirm, setConfirm] = useState({ open: false, id: null });
 
   useEffect(() => {
@@ -42,12 +64,11 @@ export default function CaseListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  // Debounce arama için useEffect
+  // Debounce arama
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setQuery(prev => ({ ...prev, searchTerm: searchInput, page: 1 }));
-    }, 500); // 500ms gecikme
-
+      setQuery((prev) => ({ ...prev, searchTerm: searchInput, page: 1 }));
+    }, 500);
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
@@ -68,31 +89,29 @@ export default function CaseListPage() {
 
   async function fetchFiltersMeta() {
     try {
-      const res = await axios.get(`${API_BASE}/cases`, {
-        params: { page: 1, pageSize: 200 },
-      });
+      const res = await axios.get(`${API_BASE}/cases`, { params: { page: 1, pageSize: 200 } });
       const items = res.data?.items ?? [];
-      setCities([...new Set(items.map(i => i.city).filter(Boolean))]);
-      setLanguages([...new Set(items.map(i => i.language).filter(Boolean))]);
+      setCities([...new Set(items.map((i) => i.city || i.City).filter(Boolean))]);
     } catch (err) {
       console.error("Filtre metaları alınamadı:", err);
     }
   }
 
-  const handlePageChange = (page) => setQuery(prev => ({ ...prev, page }));
+  const handlePageChange = (page) => setQuery((prev) => ({ ...prev, page }));
   const toggleExpand = (id) =>
-    setExpandedRows(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    setExpandedRows((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
-  const handleSortByDate = () => {
-    setQuery(prev => {
-      if (prev.sortBy === "filedDate") {
+  // Dosya Konusu üzerinden sıralama
+  const handleSortByFileSubject = () => {
+    setQuery((prev) => {
+      if (prev.sortBy === "filesubject") {
         if (prev.sortOrder === "desc") return { ...prev, sortOrder: "asc", page: 1 };
-        if (prev.sortOrder === "asc")  return { ...prev, sortBy: "", sortOrder: "", page: 1 };
+        if (prev.sortOrder === "asc") return { ...prev, sortBy: "", sortOrder: "", page: 1 };
         return { ...prev, sortOrder: "desc", page: 1 };
       }
-      return { ...prev, sortBy: "filedDate", sortOrder: "desc", page: 1 };
+      return { ...prev, sortBy: "filesubject", sortOrder: "desc", page: 1 };
     });
   };
 
@@ -106,7 +125,7 @@ export default function CaseListPage() {
     }
   };
 
-  // ⬇️ Silme — modern onay modalı
+  // Silme — onay modalı
   const askDelete = (id) => setConfirm({ open: true, id });
   const doDelete = async () => {
     const id = confirm.id;
@@ -134,7 +153,7 @@ export default function CaseListPage() {
           <div className="search-input-container">
             <input
               type="text"
-              placeholder="Dava başlığı veya açıklama ile ara..."
+              placeholder="Dosya konusu veya açıklama ile ara..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="search-input"
@@ -147,67 +166,16 @@ export default function CaseListPage() {
           <label>Şehir</label>
           <select
             value={query.city}
-            onChange={(e) => setQuery(prev => ({ ...prev, city: e.target.value, page: 1 }))}
+            onChange={(e) => setQuery((prev) => ({ ...prev, city: e.target.value, page: 1 }))}
           >
             <option value="">Tüm Şehirler</option>
             {cities.map((city) => (
-              <option key={city} value={city}>{city}</option>
+              <option key={city} value={city}>
+                {city}
+              </option>
             ))}
           </select>
         </div>
-
-        <div className="filter-item">
-          <label>Dil</label>
-          <select
-            value={query.language}
-            onChange={(e) => setQuery(prev => ({ ...prev, language: e.target.value, page: 1 }))}
-          >
-            <option value="">Tüm Diller</option>
-            {languages.map((lang) => (
-              <option key={lang} value={lang}>{lang}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-item">
-          <label>Aciliyet</label>
-          <select
-            value={query.urgencyLevel}
-            onChange={(e) => setQuery(prev => ({ ...prev, urgencyLevel: e.target.value, page: 1 }))}
-          >
-            <option value="">Tüm Aciliyetler</option>
-            <option value="Normal">Normal</option>
-            <option value="Acil">Acil</option>
-            <option value="Düşük Öncelik">Düşük Öncelik</option>
-          </select>
-        </div>
-
-        <div className="filter-item">
-          <label>Durum</label>
-          <select
-            value={query.isActive}
-            onChange={(e) => setQuery(prev => ({ ...prev, isActive: e.target.value, page: 1 }))}
-          >
-            <option value="">Tümü</option>
-            <option value="true">Aktif</option>
-            <option value="false">Pasif</option>
-          </select>
-        </div>
-
-        <label className="filter-checkbox">
-          <input
-            type="checkbox"
-            checked={query.requiresProBono === "true"}
-            onChange={(e) =>
-              setQuery(prev => ({
-                ...prev,
-                requiresProBono: e.target.checked ? "true" : "",
-                page: 1,
-              }))
-            }
-          />
-          Pro Bono
-        </label>
       </div>
 
       {/* Liste */}
@@ -221,35 +189,43 @@ export default function CaseListPage() {
         <table className="case-table">
           <thead>
             <tr>
-              <th>Başlık</th>
-              <th>Şehir</th>
-              <th>Aciliyet</th>
-              <th>Çalışma Grubu</th>
-              <th>Pro Bono</th>
-              <th onClick={handleSortByDate} style={{ cursor: "pointer", whiteSpace: "nowrap" }}>
-                Tarih{" "}
-                {query.sortBy === "filedDate" &&
+              <th
+                onClick={handleSortByFileSubject}
+                style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                Dosya Konusu{" "}
+                {query.sortBy === "filesubject" &&
                   (query.sortOrder === "asc" ? "▲" : query.sortOrder === "desc" ? "▼" : "")}
               </th>
+              <th>Şehir</th>
+              <th>Müvekkil</th>
+              <th>Faturalı mı?</th>
               <th>İşlem</th>
             </tr>
           </thead>
           <tbody>
             {cases.map((c) => {
-              const isOpen = expandedRows.includes(c.id);
+              // API camel/Pascal farkını tolere et
+              const id = c.id ?? c.Id;
+              const fileSubject = c.fileSubject ?? c.FileSubject ?? "-";
+              const city = c.city ?? c.City ?? "-";
+              const contactClientRaw = c.contactClient ?? c.ContactClient ?? "-";
+              const contactClient = maskName(contactClientRaw); // 🔐 burada maskeleniyor
+              const isToBeInvoiced = (c.isToBeInvoiced ?? c.IsToBeInvoiced) ? "Evet" : "Hayır";
+
+              const isOpen = expandedRows.includes(id);
+
               return (
-                <React.Fragment key={c.id}>
+                <React.Fragment key={id}>
                   <tr>
-                    <td>{c.title}</td>
-                    <td>{c.city}</td>
-                    <td>{c.urgencyLevel}</td>
-                    <td>{c.workingGroupName || "-"}</td>
-                    <td>{c.requiresProBono ? "Evet" : "Hayır"}</td>
-                    <td>{c.filedDate ? new Date(c.filedDate).toLocaleDateString() : "-"}</td>
+                    <td>{fileSubject}</td>
+                    <td>{city}</td>
+                    <td>{contactClient}</td>
+                    <td>{isToBeInvoiced}</td>
                     <td className="actions-cell">
                       <button
                         className="btn-details"
-                        onClick={() => toggleExpand(c.id)}
+                        onClick={() => toggleExpand(id)}
                         aria-expanded={isOpen}
                         aria-label={isOpen ? "Detayı kapat" : "Detay aç"}
                       >
@@ -257,14 +233,14 @@ export default function CaseListPage() {
                       </button>{" "}
                       <button
                         className="btn-update"
-                        onClick={() => handleEditClick(c.id)}
+                        onClick={() => handleEditClick(id)}
                         aria-label="Davayı güncelle"
                       >
                         Güncelle
                       </button>{" "}
                       <button
                         className="btn-delete"
-                        onClick={() => askDelete(c.id)}
+                        onClick={() => askDelete(id)}
                         aria-label="Davayı sil"
                       >
                         Sil
@@ -274,17 +250,16 @@ export default function CaseListPage() {
 
                   {isOpen && (
                     <tr>
-                      <td colSpan={8}>
+                      <td colSpan={5}>
                         <div style={{ background: "#f2f5fa", padding: 12, borderRadius: 10 }}>
-                          <strong>Açıklama:</strong> {c.description || "-"} <br />
-                          <strong>Tecrübe Seviyesi:</strong> {c.requiredExperienceLevel || "-"} <br />
-                          <strong>Dil:</strong> {c.language || "-"} <br />
-                          <strong>Tahmini Süre:</strong>{" "}
-                          {typeof c.estimatedDurationInDays === "number" && c.estimatedDurationInDays > 0
-                            ? `${c.estimatedDurationInDays} gün`
+                          <strong>Açıklama:</strong>{" "}
+                          {c.description ?? c.Description ?? "-"} <br />
+                          <strong>Konu Açıklaması:</strong>{" "}
+                          {c.subjectMatterDescription ?? c.SubjectMatterDescription ?? "-"} <br />
+                          <strong>Adres:</strong>{" "}
+                          {(c.address ?? c.Address) || (c.county ?? c.County)
+                            ? `${c.address ?? c.Address ?? ""} ${c.county ?? c.County ?? ""}`.trim()
                             : "-"}
-                          <br />
-                          <strong>Aktiflik:</strong> {c.isActive ? "Aktif" : "Pasif"}
                         </div>
                       </td>
                     </tr>
@@ -318,7 +293,7 @@ export default function CaseListPage() {
         />
       )}
 
-      {/* ✅ Silme Onayı Modalı */}
+      {/* Silme Onayı Modalı */}
       <ConfirmDialog
         open={confirm.open}
         title="Bu davayı silmek istiyor musun?"

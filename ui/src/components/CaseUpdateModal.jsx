@@ -1,10 +1,14 @@
+// ui/src/components/CaseUpdateModal.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
 import "../App.css";
 
+// Şehir listesi + aramalı seçici (avukat formundaki ile aynı)
+import { CITIES } from "../constants";
+import SearchableSelect from "./inputs/SearchableSelect";
+
 export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
   const [formData, setFormData] = useState({});
-  const [workingGroups, setWorkingGroups] = useState([]);
 
   // mini toast
   const notify = (msg) => {
@@ -31,36 +35,33 @@ export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
     };
   }, [onClose]);
 
-  // Çalışma grupları
-  useEffect(() => {
-    axios
-      .get("https://localhost:60227/api/workinggroups")
-      .then((r) => setWorkingGroups(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setWorkingGroups([]));
-  }, []);
-
-  // Modal açılışında formu doldur
+  // Modal açılışında formu doldur (Pascal/camel tolerant)
   useEffect(() => {
     if (!caseData) return;
+
+    const val = (p, c) => caseData?.[p] ?? caseData?.[c] ?? "";
+
     setFormData({
-      title: caseData.title ?? "",
-      city: caseData.city ?? "",
-      language: caseData.language ?? "",
-      urgencyLevel: caseData.urgencyLevel ?? "",
-      estimatedDurationInDays:
-        caseData.estimatedDurationInDays ?? 0,
-      requiredExperienceLevel: caseData.requiredExperienceLevel ?? "",
-      filedDate: caseData.filedDate
-        ? String(caseData.filedDate).substring(0, 10)
-        : "",
-      isActive:
-        typeof caseData.isActive === "boolean" ? caseData.isActive : true,
-      workingGroupId:
-        caseData.workingGroupId != null
-          ? String(caseData.workingGroupId)
-          : "",
-      requiresProBono: !!caseData.requiresProBono,
-      description: caseData.description ?? "",
+      // Zorunlu
+      ContactClient: val("contactClient", "contactclient"),
+      FileSubject: val("fileSubject", "filesubject"),
+      PrmNatureOfAssignment: val("prmNatureOfAssignment", "prmnatureofassignment"),
+      PrmCasePlaceofUseSubject: val("prmCasePlaceofUseSubject", "prmcaseplaceofusesubject"),
+      SubjectMatterDescription: val("subjectMatterDescription", "subjectmatterdescription"),
+      IsToBeInvoiced:
+        typeof caseData?.IsToBeInvoiced === "boolean"
+          ? caseData.IsToBeInvoiced
+          : !!caseData?.isToBeInvoiced,
+      Description: val("description", "description"),
+
+      // Sorumlu kişi UI’da yok ama payload’da zorunlu → mevcut değer ya da default
+      CaseResponsible:
+        val("caseResponsible", "caseresponsible") || "Gün Hukuk Bürosu",
+
+      // Yerleşim / opsiyonel
+      City: val("city", "city"),
+      County: val("county", "county"),
+      Address: val("address", "address"),
     });
   }, [caseData]);
 
@@ -72,51 +73,43 @@ export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
   // ortak change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    if (type === "checkbox") {
-      setFormData((p) => ({ ...p, [name]: checked }));
-      return;
-    }
-    if (name === "isActive") {
-      setFormData((p) => ({ ...p, [name]: value === "true" }));
-      return;
-    }
-    if (name === "estimatedDurationInDays") {
-      setFormData((p) => ({
-        ...p,
-        [name]: value === "" ? "" : Number(value),
-      }));
-      return;
-    }
-    setFormData((p) => ({ ...p, [name]: value }));
+    setFormData((p) => ({
+      ...p,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // KISA YÖNTEM → yalnızca gerekli alanlar + City/County/Address
     const payload = {
-      ...formData,
-      isActive: !!formData.isActive,
-      requiresProBono: !!formData.requiresProBono,
-      estimatedDurationInDays:
-        formData.estimatedDurationInDays === ""
-          ? 0
-          : Number(formData.estimatedDurationInDays),
-      workingGroupId:
-        formData.workingGroupId === "" ? null : Number(formData.workingGroupId),
+      contactClient: (formData.ContactClient || "").trim(),
+      fileSubject: (formData.FileSubject || "").trim(),
+      caseResponsible: (formData.CaseResponsible || "Gün Hukuk Bürosu").trim(),
+      prmNatureOfAssignment: (formData.PrmNatureOfAssignment || "").trim(),
+      prmCasePlaceofUseSubject: (formData.PrmCasePlaceofUseSubject || "").trim(),
+      subjectMatterDescription: (formData.SubjectMatterDescription || "").trim(),
+      isToBeInvoiced: !!formData.IsToBeInvoiced,
+      description: (formData.Description || "").trim(),
+
+      // Yerleşim (opsiyonel)
+      city: formData.City || "",
+      county: formData.County || "",
+      address: formData.Address || "",
     };
 
     try {
       await axios.put(
-        `https://localhost:60227/api/cases/${caseData.id}`,
+        `https://localhost:60227/api/cases/${caseData.id ?? caseData?.Id}`,
         payload
       );
       notify("Dava başarıyla güncellendi");
       onUpdated?.();
       onClose();
     } catch (err) {
+      console.error(err);
       notify("Güncelleme başarısız oldu");
-      // istersen burada validation hatasını da gösterebiliriz
     }
   };
 
@@ -124,7 +117,7 @@ export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
     <div className="modal-overlay" onMouseDown={handleBackdrop}>
       <div
         className="modal-card"
-        style={{ maxWidth: 720 }} // Avukat modalıyla aynı genişlik
+        style={{ maxWidth: 720 }}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
@@ -140,159 +133,130 @@ export default function CaseUpdateModal({ caseData, onClose, onUpdated }) {
         </div>
 
         <div className="form-card">
-          {/* Avukat modalındaki grid ile aynı: 2 kolonlu */}
           <form onSubmit={handleSubmit} className="form-grid">
-            {/* 1. satır */}
-            <label htmlFor="title">Başlık</label>
+            {/* ZORUNLULAR */}
+            <label htmlFor="ContactClient">Müvekkil (ContactClient)</label>
             <input
-              id="title"
-              name="title"
+              id="ContactClient"
+              name="ContactClient"
+              className="lex-form-input"
+              placeholder="Örn: Ahmet Yılmaz"
+              value={formData.ContactClient || ""}
+              onChange={handleChange}
+              required
+            />
+
+            <label htmlFor="FileSubject">Dosya Konusu (FileSubject)</label>
+            <input
+              id="FileSubject"
+              name="FileSubject"
               className="lex-form-input"
               placeholder="Örn: Miras Davası"
-              value={formData.title || ""}
+              value={formData.FileSubject || ""}
               onChange={handleChange}
+              required
             />
 
-            {/* 2. satır */}
-            <label htmlFor="city">Şehir</label>
+            {/* Sorumlu kişi UI’da YOK — default/payload içinde set ediliyor */}
+
+            <label htmlFor="PrmNatureOfAssignment">Görevin Niteliği</label>
             <input
-              id="city"
-              name="city"
+              id="PrmNatureOfAssignment"
+              name="PrmNatureOfAssignment"
               className="lex-form-input"
-              placeholder="Örn: Konya"
-              value={formData.city || ""}
+              placeholder="Örn: Danışmanlık / Dava Takibi"
+              value={formData.PrmNatureOfAssignment || ""}
               onChange={handleChange}
+              required
             />
 
-            {/* 3. satır */}
-            <label htmlFor="language">Dil</label>
+            <label htmlFor="PrmCasePlaceofUseSubject">Kullanım Yeri Konusu</label>
             <input
-              id="language"
-              name="language"
+              id="PrmCasePlaceofUseSubject"
+              name="PrmCasePlaceofUseSubject"
               className="lex-form-input"
-              placeholder="Örn: Türkçe"
-              value={formData.language || ""}
+              placeholder="Örn: Ankara Adliyesi / İcra Dairesi"
+              value={formData.PrmCasePlaceofUseSubject || ""}
               onChange={handleChange}
+              required
             />
 
-            {/* 4. satır */}
-            <label htmlFor="urgencyLevel">Aciliyet</label>
-            <select
-              id="urgencyLevel"
-              name="urgencyLevel"
-              className="lex-form-input"
-              value={formData.urgencyLevel || ""}
-              onChange={handleChange}
-            >
-              <option value="">Seçiniz</option>
-              <option value="Düşük Öncelik">Düşük Öncelik</option>
-              <option value="Normal">Normal</option>
-              <option value="Acil">Acil</option>
-            </select>
-
-            {/* 5. satır */}
-            <label htmlFor="estimatedDurationInDays">
-              Tahmini Süre (gün)
-            </label>
+            <label htmlFor="SubjectMatterDescription">Konu Açıklaması</label>
             <input
-              id="estimatedDurationInDays"
-              type="number"
-              min="0"
-              name="estimatedDurationInDays"
+              id="SubjectMatterDescription"
+              name="SubjectMatterDescription"
               className="lex-form-input"
-              value={formData.estimatedDurationInDays}
+              placeholder="Örn: Miras paylaşımı ihtilafı"
+              value={formData.SubjectMatterDescription || ""}
               onChange={handleChange}
+              required
             />
 
-            {/* 6. satır */}
-            <label htmlFor="requiredExperienceLevel">
-              Tecrübe Seviyesi
-            </label>
-            <select
-              id="requiredExperienceLevel"
-              name="requiredExperienceLevel"
-              className="lex-form-input"
-              value={formData.requiredExperienceLevel || ""}
-              onChange={handleChange}
-            >
-              <option value="">Seçiniz</option>
-              <option value="Başlangıç">Başlangıç</option>
-              <option value="orta">orta</option>
-              <option value="Uzman">Uzman</option>
-            </select>
-
-            {/* 7. satır */}
-            <label htmlFor="filedDate">Dava Tarihi</label>
-            <input
-              id="filedDate"
-              type="date"
-              name="filedDate"
-              className="lex-form-input"
-              value={formData.filedDate || ""}
-              onChange={handleChange}
+            {/* Şehir: aramalı seçici (İlçe/Adres’in üstünde) */}
+            <label>Şehir</label>
+            <SearchableSelect
+              options={CITIES}
+              value={formData.City || ""}
+              onChange={(v) => setFormData((p) => ({ ...p, City: v }))}
+              placeholder="Şehir seçin…"
             />
 
-            {/* 8. satır */}
-            <label htmlFor="isActive">Aktif</label>
-            <select
-              id="isActive"
-              name="isActive"
+            <label htmlFor="IsToBeInvoiced">Faturalandırılacak mı?</label>
+            <div
               className="lex-form-input"
-              value={String(!!formData.isActive)}
-              onChange={handleChange}
+              style={{ display: "flex", alignItems: "center" }}
             >
-              <option value="true">Aktif</option>
-              <option value="false">Pasif</option>
-            </select>
-
-            {/* 9. satır */}
-            <label htmlFor="workingGroupId">Çalışma Grubu</label>
-            <select
-              id="workingGroupId"
-              name="workingGroupId"
-              className="lex-form-input"
-              value={formData.workingGroupId ?? ""}
-              onChange={handleChange}
-            >
-              <option value="">-- Çalışma Grubu Seçin --</option>
-              {workingGroups.map((g) => (
-                <option key={g.id} value={String(g.id)}>
-                  {g.groupName}
-                </option>
-              ))}
-            </select>
-
-            {/* 10. satır */}
-            <label htmlFor="requiresProBono">Pro Bono</label>
-            <div className="lex-form-input" style={{ display: "flex", alignItems: "center" }}>
               <input
-                id="requiresProBono"
+                id="IsToBeInvoiced"
                 type="checkbox"
-                name="requiresProBono"
-                checked={!!formData.requiresProBono}
+                name="IsToBeInvoiced"
+                checked={!!formData.IsToBeInvoiced}
                 onChange={handleChange}
               />
-              <label htmlFor="requiresProBono" style={{ marginLeft: 8 }}>
+              <label htmlFor="IsToBeInvoiced" style={{ marginLeft: 8 }}>
                 Evet
               </label>
             </div>
 
-            {/* 11. satır - geniş alan */}
-            <label htmlFor="description" style={{ alignSelf: "start" }}>
+            <label htmlFor="Description" style={{ alignSelf: "start" }}>
               Açıklama
             </label>
             <textarea
-              id="description"
-              name="description"
+              id="Description"
+              name="Description"
               className="lex-form-input"
               placeholder="Dava ile ilgili kısa açıklama"
-              value={formData.description || ""}
+              value={formData.Description || ""}
               onChange={handleChange}
               rows={3}
               style={{ width: "100%" }}
+              required
             />
 
-            {/* Aksiyonlar */}
+            {/* Ülke alanı kaldırıldı */}
+
+            {/* İlçe / Adres */}
+            <label htmlFor="County">İlçe (opsiyonel)</label>
+            <input
+              id="County"
+              name="County"
+              className="lex-form-input"
+              value={formData.County || ""}
+              onChange={handleChange}
+              placeholder="Örn: Çankaya"
+            />
+
+            <label htmlFor="Address">Adres (opsiyonel)</label>
+            <input
+              id="Address"
+              name="Address"
+              className="lex-form-input"
+              value={formData.Address || ""}
+              onChange={handleChange}
+            />
+
+            {/* Avukat 1/2/3 KALDIRILDI */}
+
             <div className="form-actions" style={{ gridColumn: "1 / -1" }}>
               <button type="button" className="btn-secondary" onClick={onClose}>
                 Vazgeç

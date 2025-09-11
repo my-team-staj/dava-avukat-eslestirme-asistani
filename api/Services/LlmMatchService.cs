@@ -1,7 +1,13 @@
-﻿using System.Net.Http.Headers;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using dava_avukat_eslestirme_asistani.DTOs.Match;
+using Microsoft.Extensions.Configuration;
 
 namespace dava_avukat_eslestirme_asistani.Services
 {
@@ -27,40 +33,62 @@ namespace dava_avukat_eslestirme_asistani.Services
             var model = modelOverride ?? (_cfg["OpenAI:Model"] ?? "gpt-4o-mini");
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-            // 2) Prompt (Türkçe, detaylı gerekçe + puanlama rehberi)
-            string One(string s) => (s ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
+            // 2) Prompt (Türkçe, yeni title’lara göre)
+            string One(string? s) => (s ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
 
             var sys =
                 "Sen bir dava–avukat eşleştirme asistanısın.\n" +
                 "- SADECE verilen avukat listesinden seç; listede olmayanı yazma.\n" +
-                "- Zorunlu uyum: şehir, dil, pro bono, çalışma grubu (WG). Bunlardan biri tutmazsa adayı ele.\n" +
+                "- Zorunlu uyum: ŞEHİR (Case.City ≡ Lawyer.City). Uymayan adayı ele.\n" +
+                "- Değerlendirme sinyalleri (ağırlıklar):\n" +
+                "  • Deneyim yılı (0.50) – ExperienceYears.\n" +
+                "  • WorkGroup/Title uyumu (0.30) – Case açıklamasındaki anahtarlarla adayın WorkGroup/Title eşleşmesi.\n" +
+                "  • Metinsel açıklama uyumu (0.20) – Case.SubjectMatterDescription veya Description ile adayın Title/Education/Languages bilgileri arasındaki anlamlı ilişki.\n" +
+                "- Dil/Pro bono gibi alanlar verilmediyse zorunlu tutma.\n" +
                 "- ÇIKIŞ ŞEMASI: {\"candidates\":[{\"lawyerId\":number,\"score\":number,\"reason\":string}]}\n" +
-                "- score: 0–1 arası gerçekçi uygunluk; yuvarlak sayılara (0.80, 0.90, 1.00) meyletme. 1.00 sadece istisnai kusursuzlukta.\n" +
-                "- Puanlama rehberi (kompozit): rating (0.45), toplam dava (0.25), deneyim yılı (0.15), açıklama uyumu (0.15).\n" +
-                "  • rating: 5 üzerinden normalize et.  • toplam dava: 50=orta, 200+=yüksek.  • deneyim: 3=junior, 6–10=orta, 10+=iyi.\n" +
-                "  • açıklama uyumu: case açıklamasındaki anahtar kelimeler ile WG/uzmanlık tutarlılığına bak.\n" +
-                "- reason: Türkçe ve bilgi dolu olsun (1–2 kısa cümle, ~200 karakter). Zorunlu eşleşmeler (şehir/dil/pro bono/WG) + güçlü yanlar (rating/dosya/deneyim) + varsa küçük bir trade-off belirt.\n" +
+                "- score: 0–1 arası gerçekçi; 1.00 verme, yuvarlak skorlardan kaçın.\n" +
+                "- reason: Türkçe, 1–2 kısa cümle (~200 karakter). Şehir uyumu + güçlü yanlar (deneyim/WG-Title/anahtar kelime) + küçük bir trade-off belirt.\n" +
                 "- Yalnızca geçerli JSON döndür; JSON dışına yazma.";
 
-            var user = $@"
+            // Case özet bloğu
+            var caseBlock = $@"
 # CASE
-id={caseSum.Id}; title={One(caseSum.Title)};
-desc={One(caseSum.Description)};
-city={caseSum.City}; language={caseSum.Language};
-urgency={caseSum.UrgencyLevel}; requiresProBono={caseSum.RequiresProBono};
-workingGroupId={(caseSum.WorkingGroupId?.ToString() ?? "null")};
-requiredExperience={caseSum.RequiredExperienceLevel};
-estimatedDurationDays={caseSum.EstimatedDurationInDays};
+id={caseSum.Id};
+contactClient={One(caseSum.ContactClient)};
+fileSubject={One(caseSum.FileSubject)};
+caseResponsible={One(caseSum.CaseResponsible)};
+natureOfAssignment={One(caseSum.PrmNatureOfAssignment)};
+placeOfUseSubject={One(caseSum.PrmCasePlaceofUseSubject)};
+subjectMatterDescription={One(caseSum.SubjectMatterDescription)};
+isToBeInvoiced={(caseSum.IsToBeInvoiced ? "true" : "false")};
+city={One(caseSum.City)};
+description={One(caseSum.Description)};
+country={One(caseSum.Country)};
+county={One(caseSum.County)};
+address={One(caseSum.Address)};
+attorney1={One(caseSum.Attorney1)};
+attorney2={One(caseSum.Attorney2)};
+attorney3={One(caseSum.Attorney3)};";
+
+            // Adaylar bloğu (yeni LawyerCard alanları)
+            var candsBlock = string.Join("\n", candidates.Select(c =>
+                $"- id={c.Id}; fullName={One(c.FullName)}; city={One(c.City)}; " +
+                $"expYears={c.ExperienceYears}; " +
+                $"langs=[{string.Join(",", (c.Languages ?? Array.Empty<string>()).Select(One))}]; " +
+                $"title={One(c.Title)}; education={One(c.Education)}; " +
+                $"workGroupId={c.WorkGroupId}; workGroup={One(c.WorkGroup)};"
+            ));
+
+            var user = $@"
+{caseBlock}
 
 # CANDIDATES (choose top {topK})
-{string.Join("\n", candidates.Select(c =>
-    $"- id={c.Id}; name={One(c.Name)}; city={c.City}; langs=[{string.Join(",", c.Languages)}]; " +
-    $"proBono={c.AvailableForProBono}; expYears={c.ExperienceYears}; rating={c.Rating}; totalCases={c.TotalCasesHandled}; wg={c.WorkingGroupId};"))}
+{candsBlock}
 
 # INSTRUCTIONS
-- Zorunlu kurallar: şehir, dil, pro bono ve WG uyuşmayan adayı ele.
-- Kompozit puanlama rehberine göre skor ver; gereksiz eşitliklerden kaçın.
-- reasons Türkçe ve somut olsun; “Şehir=…, Dil=…, Pro bono=…, WG=…” gibi net atıflar yap.
+- Zorunlu kural: CITY uyuşmalı. Uyuşmayan adayı ele.
+- Belirtilen ağırlıklara göre skoru hesapla; gereksiz eşitliklerden kaçın.
+- reasons Türkçe ve somut olsun; şehir uyumu + güçlü yanlar + küçük bir trade-off belirt.
 - En iyi {topK} adayı azalan skora göre döndür. Sadece geçerli JSON üret.
 ";
 
@@ -116,16 +144,12 @@ estimatedDurationDays={caseSum.EstimatedDurationInDays};
             }
             if (raw.Count == 0) return new List<MatchCandidate>();
 
-            // 5) Aday sayısından bağımsız KALİBRASYON (monotonik, 1.00 yok, yuvarlak kalıpları kırar)
+            // 5) Kalibrasyon (monotonik; 1.00 yok; yuvarlakları kırar)
             var calibrated = raw
                 .Select(x =>
                 {
-                    // Monotonik, sayıya bağ(ım)sız bir harita:
-                    //  - önce 0..1'e kırp, sonra lojistikle yumuşat, ardından [0.40..0.96] bandına al.
                     var baseScore = MonoMap(x.Score);
-                    // deterministik çok küçük titreme (yuvarlakları kırmak için), ±0.01
                     var s = Clamp(baseScore + Jitter(caseSum.Id, x.LawyerId), 0.0, 0.96);
-                    // okunaklılık
                     s = Math.Round(s, 2);
 
                     var reason = x.Reason ?? string.Empty;
@@ -144,9 +168,6 @@ estimatedDurationDays={caseSum.EstimatedDurationInDays};
         private static double Clamp01(double v) => v < 0 ? 0 : (v > 1 ? 1 : v);
         private static double Clamp(double v, double lo, double hi) => v < lo ? lo : (v > hi ? hi : v);
 
-        // Aday sayısından bağımsız, monotonik bir puan haritası:
-        //  - Lojistik merkez: 0.5, ölçek: 0.22 (yumuşak S-eğrisi)
-        //  - Son aralık: [0.40, 0.96] (1.00 hiçbir zaman olmaz)
         private static double MonoMap(double s)
         {
             s = Clamp01(s);
@@ -154,7 +175,6 @@ estimatedDurationDays={caseSum.EstimatedDurationInDays};
             return 0.40 + 0.56 * p; // 0.40..0.96
         }
 
-        // Yuvarlak sayıları kırmak için deterministik, küçük jitter (±0.01)
         private static double Jitter(int caseId, int lawyerId)
         {
             unchecked
@@ -162,8 +182,7 @@ estimatedDurationDays={caseSum.EstimatedDurationInDays};
                 int h = 17;
                 h = h * 31 + caseId;
                 h = h * 31 + lawyerId;
-                // 0..1
-                double r = ((h & 0x7fffffff) % 1000) / 1000.0;
+                double r = ((h & 0x7fffffff) % 1000) / 1000.0; // 0..1
                 return (r - 0.5) * 0.02; // -0.01 .. +0.01
             }
         }
