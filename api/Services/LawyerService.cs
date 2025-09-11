@@ -48,6 +48,7 @@ namespace dava_avukat_eslestirme_asistani.Services
             if (lawyer == null)
                 throw new KeyNotFoundException("Avukat bulunamadı");
 
+            // DTO -> Entity map (WorkingGroupId dahil)
             _mapper.Map(dto, lawyer);
             _lawyerRepository.Update(lawyer);
             await _lawyerRepository.SaveAsync();
@@ -63,46 +64,55 @@ namespace dava_avukat_eslestirme_asistani.Services
         {
             var q = _lawyerRepository.Query();
 
-            // Filtreleme
+            // --- Filtreleme ---
             if (!string.IsNullOrWhiteSpace(query.City))
                 q = q.Where(l => l.City == query.City);
 
             if (query.IsActive.HasValue)
                 q = q.Where(l => l.IsActive == query.IsActive.Value);
 
-            if (query.AvailableForProBono.HasValue)
-                q = q.Where(l => l.AvailableForProBono == query.AvailableForProBono.Value);
+            // Not: AvailableForProBono alanı yeni şemada yok; bu filtre kaldırıldı.
 
-            // Arama
+            // --- Arama ---
             if (!string.IsNullOrWhiteSpace(query.SearchTerm))
             {
-                var searchTerm = query.SearchTerm.ToLower();
-                q = q.Where(l => l.Name.ToLower().Contains(searchTerm) || 
-                                l.Email.ToLower().Contains(searchTerm) ||
-                                l.BaroNumber.ToLower().Contains(searchTerm));
+                var t = query.SearchTerm.ToLowerInvariant();
+                q = q.Where(l =>
+                    (l.FullName != null && l.FullName.ToLower().Contains(t)) ||
+                    (l.Email != null && l.Email.ToLower().Contains(t)) ||
+                    (l.Phone != null && l.Phone.ToLower().Contains(t)) ||
+                    (l.City != null && l.City.ToLower().Contains(t)) ||
+                    (l.Languages != null && l.Languages.ToLower().Contains(t)) ||
+                    (l.Title != null && l.Title.ToLower().Contains(t)) ||
+                    (l.Education != null && l.Education.ToLower().Contains(t))
+                );
             }
 
-            // Toplam kayıt
+            // --- Toplam kayıt ---
             var totalItems = await q.CountAsync();
 
-            // Sıralama
-            var sortBy = (query.SortBy ?? "Name").ToLowerInvariant();
+            // --- Sıralama ---
+            var sortBy = (query.SortBy ?? "FullName").ToLowerInvariant();
             var desc = string.Equals(query.SortOrder, "desc", StringComparison.OrdinalIgnoreCase);
 
             q = sortBy switch
             {
-                "rating" => desc ? q.OrderByDescending(l => l.Rating).ThenBy(l => l.Name)
-                                 : q.OrderBy(l => l.Rating).ThenBy(l => l.Name),
-                "name" or _ => desc ? q.OrderByDescending(l => l.Name)
-                                    : q.OrderBy(l => l.Name)
+                "city" => desc ? q.OrderByDescending(l => l.City).ThenBy(l => l.FullName)
+                                    : q.OrderBy(l => l.City).ThenBy(l => l.FullName),
+                "startdate" => desc ? q.OrderByDescending(l => l.StartDate).ThenBy(l => l.FullName)
+                                    : q.OrderBy(l => l.StartDate).ThenBy(l => l.FullName),
+                "title" => desc ? q.OrderByDescending(l => l.Title).ThenBy(l => l.FullName)
+                                    : q.OrderBy(l => l.Title).ThenBy(l => l.FullName),
+                "fullname" or _ => desc ? q.OrderByDescending(l => l.FullName)
+                                        : q.OrderBy(l => l.FullName)
             };
 
-            // Sayfalama
+            // --- Sayfalama ---
             var page = query.Page <= 0 ? 1 : query.Page;
             var pageSize = query.PageSize <= 0 ? 10 : query.PageSize;
             var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
-            // DTO'ya projeksiyon
+            // --- DTO'ya projeksiyon ---
             var items = await q
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -127,6 +137,10 @@ namespace dava_avukat_eslestirme_asistani.Services
             }
 
             entity.IsActive = false;
+            // İstersen soft-delete alanlarını da setleyebilirsin:
+            // entity.IsDeleted = true;
+            // entity.DeletedAt = DateTime.UtcNow;
+
             _lawyerRepository.Update(entity);
             await _lawyerRepository.SaveAsync();
             return true;

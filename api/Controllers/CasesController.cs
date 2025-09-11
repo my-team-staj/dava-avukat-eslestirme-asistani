@@ -29,7 +29,6 @@ namespace dava_avukat_eslestirme_asistani.Controllers
 
             var created = await _caseService.CreateCaseAsync(caseDto);
             var dto = _mapper.Map<CaseDto>(created);
-
             return CreatedAtAction(nameof(GetCaseById), new { id = dto.Id }, dto);
         }
 
@@ -60,7 +59,8 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             var updated = await _caseService.UpdateCaseAsync(id, dto);
             if (updated is null) return NotFound();
 
-            return Ok(updated); // dilersen NoContent() olarak değiştirebilirsin
+            var result = _mapper.Map<CaseDto>(updated);
+            return Ok(result); // İstersen NoContent() yapabiliriz
         }
 
         // SOFT DELETE

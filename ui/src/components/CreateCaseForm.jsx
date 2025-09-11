@@ -1,34 +1,32 @@
-import React, { useState, useEffect } from "react";
+// ui/src/components/CreateCaseForm.jsx
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "../App.css";
 
+import { CITIES } from "../constants";
+import SearchableSelect from "./inputs/SearchableSelect";
+
 function CreateCaseForm() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    filedDate: new Date().toISOString().substring(0, 10),
-    city: "",
-    language: "Türkçe",
-    urgencyLevel: "Normal",
-    requiresProBono: false,
-    estimatedDurationInDays: 0,
-    requiredExperienceLevel: "Orta",
-    workingGroupId: ""
-  });
 
-  const [workingGroups, setWorkingGroups] = useState([]);
+  const initialForm = {
+    // ZORUNLU
+    ContactClient: "",
+    FileSubject: "",
+    PrmNatureOfAssignment: "",
+    PrmCasePlaceofUseSubject: "",
+    SubjectMatterDescription: "",
+    IsToBeInvoiced: false,
+    Description: "",
+    // YERLEŞİM / OPSİYONEL
+    City: "",
+    County: "",
+    Address: "",
+  };
 
-  useEffect(() => {
-    axios
-      .get("https://localhost:60227/api/workinggroups")
-      .then((res) => setWorkingGroups(res.data))
-      .catch((err) =>
-        console.error("Çalışma grupları alınırken hata oluştu", err)
-      );
-  }, []);
+  const [form, setForm] = useState(initialForm);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -40,183 +38,159 @@ function CreateCaseForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      await axios.post("https://localhost:60227/api/cases", form);
-      toast.success("✅ Dava başarıyla oluşturuldu!");
-      
-      // Formu temizle
-      setForm({
-        title: "",
-        description: "",
-        filedDate: new Date().toISOString().substring(0, 10),
-        city: "",
-        language: "Türkçe",
-        urgencyLevel: "Normal",
-        requiresProBono: false,
-        estimatedDurationInDays: 0,
-        requiredExperienceLevel: "Orta",
-        workingGroupId: ""
-      });
+      const payload = {
+        ...form,
+        CaseResponsible: "Gün Hukuk Bürosu", // sabit
+      };
 
-      // Başarılı kayıt sonrası dava listesine yönlendir
-      setTimeout(() => {
-        navigate("/cases");
-      }, 1500); // 1.5 saniye bekle ki kullanıcı başarı mesajını görebilsin
-      
+      await axios.post("https://localhost:60227/api/cases", payload);
+      toast.success("✅ Dava başarıyla oluşturuldu!");
+      setForm(initialForm);
+      setTimeout(() => navigate("/cases"), 1500);
     } catch (error) {
-      console.error(error);
+      console.error(error.response?.data || error);
       toast.error("❌ Kayıt sırasında bir hata oluştu.");
-      // Hata durumunda yönlendirme yapma
     }
   };
 
   return (
-    <form className="lex-form" onSubmit={handleSubmit}>
-      <h2>Dava Oluştur</h2>
+    <form className="lex-form lex-form--wide" onSubmit={handleSubmit}>
+      <h2 className="lex-form-title">Dava Oluştur</h2>
 
+      {/* ZORUNLU ALANLAR */}
       <div className="lex-form-row">
-        <label htmlFor="title">Başlık*</label>
+        <label htmlFor="ContactClient">Müvekkil*</label>
         <input
           type="text"
           className="lex-form-input"
-          id="title"
-          name="title"
-          placeholder="Örn: Miras Davası"
-          value={form.title}
+          id="ContactClient"
+          name="ContactClient"
+          placeholder="Örn: Ahmet Yılmaz"
+          value={form.ContactClient}
           onChange={handleChange}
           required
         />
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="description">Açıklama*</label>
+        <label htmlFor="FileSubject">Dosya Konusu*</label>
+        <input
+          type="text"
+          className="lex-form-input"
+          id="FileSubject"
+          name="FileSubject"
+          placeholder="Örn: Miras Davası"
+          value={form.FileSubject}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="PrmNatureOfAssignment">Görevin Niteliği*</label>
+        <input
+          type="text"
+          className="lex-form-input"
+          id="PrmNatureOfAssignment"
+          name="PrmNatureOfAssignment"
+          placeholder="Örn: Danışmanlık / Dava Takibi"
+          value={form.PrmNatureOfAssignment}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="PrmCasePlaceofUseSubject">Kullanım Yeri Konusu*</label>
+        <input
+          type="text"
+          className="lex-form-input"
+          id="PrmCasePlaceofUseSubject"
+          name="PrmCasePlaceofUseSubject"
+          placeholder="Örn: Ankara Adliyesi / İcra Dairesi"
+          value={form.PrmCasePlaceofUseSubject}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="SubjectMatterDescription">Konu Açıklaması*</label>
+        <input
+          type="text"
+          className="lex-form-input"
+          id="SubjectMatterDescription"
+          name="SubjectMatterDescription"
+          placeholder="Örn: Miras paylaşımı ihtilafı"
+          value={form.SubjectMatterDescription}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="IsToBeInvoiced">Faturalandırılacak mı?*</label>
+        <div className="lex-checkbox-wrap">
+          <input
+            type="checkbox"
+            id="IsToBeInvoiced"
+            name="IsToBeInvoiced"
+            checked={form.IsToBeInvoiced}
+            onChange={handleChange}
+          />
+          <span>Evet</span>
+        </div>
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="Description">Açıklama*</label>
         <textarea
           className="lex-form-input"
-          id="description"
-          name="description"
+          id="Description"
+          name="Description"
           placeholder="Dava ile ilgili kısa açıklama"
-          value={form.description}
+          value={form.Description}
           onChange={handleChange}
-          rows={2}
+          rows={4}
           required
         />
       </div>
 
+      {/* YERLEŞİM / OPSİYONEL ALANLAR */}
       <div className="lex-form-row">
-        <label htmlFor="filedDate">Dava Tarihi*</label>
-        <input
-          type="date"
-          className="lex-form-input"
-          id="filedDate"
-          name="filedDate"
-          value={form.filedDate}
-          onChange={handleChange}
-          required
+        <label>Şehir*</label>
+        <SearchableSelect
+          options={CITIES}
+          value={form.City}
+          onChange={(v) => setForm((p) => ({ ...p, City: v }))}
+          placeholder="Şehir seçin…"
         />
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="city">Şehir*</label>
+        <label htmlFor="County">İlçe</label>
         <input
           type="text"
           className="lex-form-input"
-          id="city"
-          name="city"
-          placeholder="Örn: Ankara"
-          value={form.city}
+          id="County"
+          name="County"
+          value={form.County}
           onChange={handleChange}
-          required
+          placeholder="Örn: Çankaya"
         />
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="language">Dil</label>
+        <label htmlFor="Address">Adres</label>
         <input
           type="text"
           className="lex-form-input"
-          id="language"
-          name="language"
-          placeholder="Türkçe"
-          value={form.language}
+          id="Address"
+          name="Address"
+          value={form.Address}
           onChange={handleChange}
         />
-      </div>
-
-      <div className="lex-form-row">
-        <label htmlFor="urgencyLevel">Aciliyet</label>
-        <select
-          className="lex-form-input"
-          id="urgencyLevel"
-          name="urgencyLevel"
-          value={form.urgencyLevel}
-          onChange={handleChange}
-        >
-          <option value="Normal">Normal</option>
-          <option value="Acil">Acil</option>
-          <option value="Düşük Öncelik">Düşük Öncelik</option>
-        </select>
-      </div>
-
-      <div className="lex-form-row">
-        <label htmlFor="estimatedDurationInDays">Tahmini Süre (gün)</label>
-        <input
-          type="number"
-          className="lex-form-input"
-          id="estimatedDurationInDays"
-          name="estimatedDurationInDays"
-          placeholder="Örn: 30"
-          value={form.estimatedDurationInDays}
-          onChange={handleChange}
-          min="1"
-          max="365"
-        />
-      </div>
-
-      <div className="lex-form-row">
-        <label htmlFor="requiredExperienceLevel">Tecrübe Seviyesi</label>
-        <select
-          className="lex-form-input"
-          id="requiredExperienceLevel"
-          name="requiredExperienceLevel"
-          value={form.requiredExperienceLevel}
-          onChange={handleChange}
-        >
-          <option value="Başlangıç">Başlangıç</option>
-          <option value="Orta">Orta</option>
-          <option value="Uzman">Uzman</option>
-        </select>
-      </div>
-
-      <div className="lex-form-row">
-        <label htmlFor="workingGroupId">Çalışma Grubu</label>
-        <select
-          className="lex-form-input"
-          id="workingGroupId"
-          name="workingGroupId"
-          value={form.workingGroupId}
-          onChange={handleChange}
-        >
-          <option value="">-- Çalışma Grubu Seçin --</option>
-          {workingGroups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.groupName}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="lex-form-row">
-        <input
-          type="checkbox"
-          id="requiresProBono"
-          name="requiresProBono"
-          checked={form.requiresProBono}
-          onChange={handleChange}
-        />
-        <label htmlFor="requiresProBono" style={{ marginLeft: 8, fontWeight: 500 }}>
-          Pro Bono (Ücretsiz Hizmet Gerekli mi?)
-        </label>
       </div>
 
       <div className="lex-form-actions">

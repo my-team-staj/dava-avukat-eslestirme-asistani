@@ -1,77 +1,110 @@
-import React, { useState, useEffect } from "react";
+// ui/src/components/LawyerAddForm.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "../App.css";
 
+import { TITLES, CITIES, LANGUAGES, RECORD_TYPES } from "../constants";
+import SearchableSelect from "./inputs/SearchableSelect";
+import SearchableMultiSelect from "./inputs/SearchableMultiSelect";
+
 function LawyerAddForm() {
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
-    name: "",
-    experienceYears: 0,
-    city: "",
-    email: "",
-    phone: "",
-    baroNumber: "",
-    languagesSpoken: "",
-    availableForProBono: false,
-    rating: 0,
-    totalCasesHandled: 0,
-    education: "",
+    fullName: "",
     isActive: true,
-    workingGroupId: ""
+    city: "",
+    title: "",
+    phone: "",
+    email: "",
+    startDate: "",
+    education: "",
+    prmEmployeeRecordType: "",
+    workingGroupId: "", // string id
   });
 
+  const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [workingGroups, setWorkingGroups] = useState([]);
+  const [loadingWg, setLoadingWg] = useState(false);
 
   useEffect(() => {
-    axios
-      .get("https://localhost:60227/api/workinggroups")
-      .then((res) => setWorkingGroups(res.data))
-      .catch((err) => console.error("Çalışma grupları alınamadı", err));
+    let mounted = true;
+    (async () => {
+      try {
+        setLoadingWg(true);
+        const res = await axios.get("https://localhost:60227/api/workinggroups");
+        if (!mounted) return;
+        const arr = Array.isArray(res?.data) ? res.data : res?.data?.items ?? [];
+        setWorkingGroups(arr);
+      } catch {
+        if (mounted) setWorkingGroups([]);
+      } finally {
+        if (mounted) setLoadingWg(false);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
+
+  const WG_OPTIONS = useMemo(
+    () =>
+      (workingGroups || [])
+        .map((g) => ({
+          value: String(g?.id ?? g?.groupId ?? g?.workingGroupId),
+          label: String(g?.groupName ?? g?.name ?? g?.title ?? "Grup"),
+        }))
+        .filter((x) => x.value && x.label),
+    [workingGroups]
+  );
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    setForm((p) => ({ ...p, [name]: type === "checkbox" ? checked : value }));
   };
+
+  const toIsoOrNull = (yyyyMmDd) => (!yyyyMmDd ? null : new Date(`${yyyyMmDd}T00:00:00`).toISOString());
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.fullName.trim()) return toast.error("İsim Soyisim zorunludur.");
+    if (!form.city.trim()) return toast.error("Şehir zorunludur.");
+    if (!form.email.trim()) return toast.error("E-posta zorunludur.");
+
+    const payload = {
+      fullName: form.fullName.trim(),
+      isActive: !!form.isActive,
+      city: form.city.trim(),
+      title: form.title?.trim() || "",
+      phone: form.phone?.trim() || "",
+      email: form.email.trim(),
+      startDate: toIsoOrNull(form.startDate),
+      languages: selectedLanguages.join(", "),
+      education: form.education?.trim() || "",
+      prmEmployeeRecordType: form.prmEmployeeRecordType || "",
+      workingGroupId: form.workingGroupId ? Number(form.workingGroupId) : null,
+    };
 
     try {
-      await axios.post("https://localhost:60227/api/lawyers", form);
+      await axios.post("https://localhost:60227/api/lawyers", payload);
       toast.success("✅ Avukat başarıyla eklendi!");
-      
-      // Formu temizle
       setForm({
-        name: "",
-        experienceYears: 0,
-        city: "",
-        email: "",
-        phone: "",
-        baroNumber: "",
-        languagesSpoken: "",
-        availableForProBono: false,
-        rating: 0,
-        totalCasesHandled: 0,
-        education: "",
+        fullName: "",
         isActive: true,
-        workingGroupId: ""
+        city: "",
+        title: "",
+        phone: "",
+        email: "",
+        startDate: "",
+        education: "",
+        prmEmployeeRecordType: "",
+        workingGroupId: "",
       });
-
-      // Başarılı kayıt sonrası avukat listesine yönlendir
-      setTimeout(() => {
-        navigate("/lawyers");
-      }, 1500); // 1.5 saniye bekle ki kullanıcı başarı mesajını görebilsin
-      
+      setSelectedLanguages([]);
+      setTimeout(() => navigate("/lawyers"), 800);
     } catch (err) {
       console.error(err);
       toast.error("❌ Kayıt sırasında hata oluştu.");
-      // Hata durumunda yönlendirme yapma
     }
   };
 
@@ -80,57 +113,38 @@ function LawyerAddForm() {
       <h2>Avukat Ekle</h2>
 
       <div className="lex-form-row">
-        <label htmlFor="name">İsim Soyisim*</label>
+        <label htmlFor="fullName">İsim Soyisim*</label>
         <input
-          type="text"
+          id="fullName"
+          name="fullName"
           className="lex-form-input"
-          id="name"
-          name="name"
           placeholder="Örn: Av. Ayşe Demir"
-          value={form.name}
+          value={form.fullName}
           onChange={handleChange}
           required
         />
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="experienceYears">Deneyim Yılı</label>
-        <input
-          type="number"
-          className="lex-form-input"
-          id="experienceYears"
-          name="experienceYears"
-          placeholder="Örn: 5"
-          value={form.experienceYears}
-          onChange={handleChange}
-          min="0"
-        />
-      </div>
-
-      <div className="lex-form-row">
-        <label htmlFor="city">Şehir*</label>
-        <input
-          type="text"
-          className="lex-form-input"
-          id="city"
-          name="city"
-          placeholder="Örn: İstanbul"
+        <label>Şehir*</label>
+        <SearchableSelect
+          options={CITIES}
           value={form.city}
-          onChange={handleChange}
-          required
+          onChange={(v) => setForm((p) => ({ ...p, city: v }))}
+          placeholder="Şehir seçin…"
         />
       </div>
 
       <div className="lex-form-row">
         <label htmlFor="email">E-Posta*</label>
         <input
-          type="email"
-          className="lex-form-input"
           id="email"
           name="email"
-          placeholder="avukat@email.com"
+          type="email"
+          className="lex-form-input"
           value={form.email}
           onChange={handleChange}
+          placeholder="avukat@email.com"
           required
         />
       </div>
@@ -138,10 +152,9 @@ function LawyerAddForm() {
       <div className="lex-form-row">
         <label htmlFor="phone">Telefon</label>
         <input
-          type="tel"
-          className="lex-form-input"
           id="phone"
           name="phone"
+          className="lex-form-input"
           placeholder="05xx xxx xx xx"
           value={form.phone}
           onChange={handleChange}
@@ -149,67 +162,44 @@ function LawyerAddForm() {
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="baroNumber">Baro No</label>
+        <label>Unvan</label>
+        <SearchableSelect
+          options={TITLES}
+          value={form.title}
+          onChange={(v) => setForm((p) => ({ ...p, title: v }))}
+          placeholder="Unvan seçin…"
+        />
+      </div>
+
+      <div className="lex-form-row">
+        <label htmlFor="startDate">Başlangıç Tarihi</label>
         <input
-          type="text"
+          id="startDate"
+          name="startDate"
+          type="date"
           className="lex-form-input"
-          id="baroNumber"
-          name="baroNumber"
-          placeholder="Örn: 34521"
-          value={form.baroNumber}
+          value={form.startDate}
           onChange={handleChange}
         />
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="languagesSpoken">Konuşulan Diller</label>
-        <input
-          type="text"
-          className="lex-form-input"
-          id="languagesSpoken"
-          name="languagesSpoken"
-          placeholder="Türkçe, İngilizce"
-          value={form.languagesSpoken}
-          onChange={handleChange}
-        />
-      </div>
-
-      <div className="lex-form-row">
-        <label htmlFor="rating">Puan (0-5)</label>
-        <input
-          type="number"
-          className="lex-form-input"
-          id="rating"
-          name="rating"
-          value={form.rating}
-          onChange={handleChange}
-          min="0"
-          max="5"
-          step="0.1"
-        />
-      </div>
-
-      <div className="lex-form-row">
-        <label htmlFor="totalCasesHandled">Toplam Dava</label>
-        <input
-          type="number"
-          className="lex-form-input"
-          id="totalCasesHandled"
-          name="totalCasesHandled"
-          placeholder="Örn: 42"
-          value={form.totalCasesHandled}
-          onChange={handleChange}
-          min="0"
-        />
+        <label>Konuşulan Diller</label>
+        <SearchableMultiSelect
+  options={LANGUAGES}
+  selected={selectedLanguages}
+  onChange={setSelectedLanguages}
+  placeholder="Dil seçin…"
+  showChips={true}     // 👈 önemli
+/>
       </div>
 
       <div className="lex-form-row">
         <label htmlFor="education">Eğitim</label>
         <input
-          type="text"
-          className="lex-form-input"
           id="education"
           name="education"
+          className="lex-form-input"
           placeholder="Üniversite/Fakülte"
           value={form.education}
           onChange={handleChange}
@@ -217,40 +207,38 @@ function LawyerAddForm() {
       </div>
 
       <div className="lex-form-row">
-        <label htmlFor="workingGroupId">Çalışma Grubu</label>
-        <select
-          className="lex-form-input"
-          id="workingGroupId"
-          name="workingGroupId"
-          value={form.workingGroupId}
-          onChange={handleChange}
-        >
-          <option value="">-- Çalışma Grubu Seçin --</option>
-          {workingGroups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.groupName}
-            </option>
-          ))}
-        </select>
+        <label>Kayıt Tipi</label>
+        <SearchableSelect
+          options={RECORD_TYPES}
+          value={form.prmEmployeeRecordType}
+          onChange={(v) => setForm((p) => ({ ...p, prmEmployeeRecordType: v }))}
+          placeholder="Kayıt tipi seçin…"
+        />
       </div>
 
       <div className="lex-form-row">
+        <label>Çalışma Grubu</label>
+        <SearchableSelect
+          options={WG_OPTIONS}
+          value={form.workingGroupId}
+          onChange={(v) => setForm((p) => ({ ...p, workingGroupId: v }))}
+          placeholder={loadingWg ? "Yükleniyor…" : "Çalışma Grubu Seçin"}
+        />
+      </div>
+
+      <div className="lex-form-row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
+          id="isActive"
+          name="isActive"
           type="checkbox"
-          id="availableForProBono"
-          name="availableForProBono"
-          checked={form.availableForProBono}
+          checked={form.isActive}
           onChange={handleChange}
         />
-        <label htmlFor="availableForProBono" style={{ marginLeft: 8, fontWeight: 500 }}>
-          Pro Bono Hizmet Verebilir
-        </label>
+        <label htmlFor="isActive" style={{ fontWeight: 500 }}>Aktif</label>
       </div>
 
       <div className="lex-form-actions">
-        <button type="submit" className="lex-form-btn">
-          Ekle
-        </button>
+        <button type="submit" className="lex-form-btn">Ekle</button>
       </div>
     </form>
   );

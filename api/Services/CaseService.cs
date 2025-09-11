@@ -19,7 +19,22 @@ namespace dava_avukat_eslestirme_asistani.Services
 
         public async Task<Case> CreateCaseAsync(CaseCreateDto caseDto)
         {
+            // Controller tarafında [ApiController] + DataAnnotations validasyonu çalışsa da
+            // servis katmanında da minimum koruma:
+            if (string.IsNullOrWhiteSpace(caseDto.ContactClient) ||
+                string.IsNullOrWhiteSpace(caseDto.FileSubject) ||
+                string.IsNullOrWhiteSpace(caseDto.CaseResponsible) ||
+                string.IsNullOrWhiteSpace(caseDto.PrmNatureOfAssignment) ||
+                string.IsNullOrWhiteSpace(caseDto.PrmCasePlaceofUseSubject) ||
+                string.IsNullOrWhiteSpace(caseDto.SubjectMatterDescription) ||
+                string.IsNullOrWhiteSpace(caseDto.City) ||
+                string.IsNullOrWhiteSpace(caseDto.Description))
+            {
+                throw new ArgumentException("Zorunlu alanlar boş olamaz.");
+            }
+
             var entity = _mapper.Map<Case>(caseDto);
+
             await _caseRepository.AddAsync(entity);
             await _caseRepository.SaveAsync();
             return entity;
@@ -27,70 +42,80 @@ namespace dava_avukat_eslestirme_asistani.Services
 
         public async Task<Case?> GetCaseByIdAsync(int id)
         {
-            return await _caseRepository.GetByIdAsync(id);
+            var entity = await _caseRepository.GetByIdAsync(id);
+            if (entity == null || entity.IsDeleted) return null;
+            return entity;
         }
 
         public async Task<PaginatedResponse<CaseDto>> GetCasesAsync(CaseQueryParameters parameters)
         {
-            var query = _caseRepository.Query();
+            var query = _caseRepository.Query()
+                                       .Where(c => !c.IsDeleted);
 
-            // Filtreleme
+            // === Filtreleme ===
             if (!string.IsNullOrWhiteSpace(parameters.City))
                 query = query.Where(c => c.City.Contains(parameters.City));
 
-            if (!string.IsNullOrWhiteSpace(parameters.Language))
-                query = query.Where(c => c.Language == parameters.Language);
+            if (!string.IsNullOrWhiteSpace(parameters.FileSubject))
+                query = query.Where(c => c.FileSubject.Contains(parameters.FileSubject));
 
-            if (!string.IsNullOrWhiteSpace(parameters.UrgencyLevel))
-                query = query.Where(c => c.UrgencyLevel == parameters.UrgencyLevel);
+            if (!string.IsNullOrWhiteSpace(parameters.CaseResponsible))
+                query = query.Where(c => c.CaseResponsible.Contains(parameters.CaseResponsible));
 
-            if (parameters.IsActive.HasValue)
-                query = query.Where(c => c.IsActive == parameters.IsActive.Value);
+            if (!string.IsNullOrWhiteSpace(parameters.ContactClient))
+                query = query.Where(c => c.ContactClient.Contains(parameters.ContactClient));
 
-            if (parameters.RequiresProBono.HasValue)
-                query = query.Where(c => c.RequiresProBono == parameters.RequiresProBono.Value);
+            if (parameters.IsToBeInvoiced.HasValue)
+                query = query.Where(c => c.IsToBeInvoiced == parameters.IsToBeInvoiced.Value);
 
-            // Arama
+            // === Arama ===
             if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
             {
-                var searchTerm = parameters.SearchTerm.ToLower();
-                query = query.Where(c => c.Title.ToLower().Contains(searchTerm) || 
-                                       c.Description.ToLower().Contains(searchTerm));
+                var term = parameters.SearchTerm.ToLower();
+                query = query.Where(c =>
+                    c.FileSubject.ToLower().Contains(term) ||
+                    c.SubjectMatterDescription.ToLower().Contains(term) ||
+                    c.Description.ToLower().Contains(term) ||
+                    c.ContactClient.ToLower().Contains(term) ||
+                    c.CaseResponsible.ToLower().Contains(term) ||
+                    c.City.ToLower().Contains(term));
             }
 
-            // Sıralama
-            switch (parameters.SortBy?.ToLower())
+            // === Sıralama ===
+            var sortBy = parameters.SortBy?.ToLower();
+            var asc = string.Equals(parameters.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
+
+            query = sortBy switch
             {
-                case "title":
-                    query = parameters.SortOrder == "asc" ? query.OrderBy(c => c.Title) : query.OrderByDescending(c => c.Title);
-                    break;
-                case "city":
-                    query = parameters.SortOrder == "asc" ? query.OrderBy(c => c.City) : query.OrderByDescending(c => c.City);
-                    break;
-                default:
-                    query = parameters.SortOrder == "asc" ? query.OrderBy(c => c.FiledDate) : query.OrderByDescending(c => c.FiledDate);
-                    break;
-            }
+                "contactclient" => asc ? query.OrderBy(c => c.ContactClient) : query.OrderByDescending(c => c.ContactClient),
+                "filesubject" => asc ? query.OrderBy(c => c.FileSubject) : query.OrderByDescending(c => c.FileSubject),
+                "caseresponsible" => asc ? query.OrderBy(c => c.CaseResponsible) : query.OrderByDescending(c => c.CaseResponsible),
+                "city" => asc ? query.OrderBy(c => c.City) : query.OrderByDescending(c => c.City),
+                "isto beinvoiced" => asc ? query.OrderBy(c => c.IsToBeInvoiced) : query.OrderByDescending(c => c.IsToBeInvoiced),
+                _ => asc ? query.OrderBy(c => c.FileSubject) : query.OrderByDescending(c => c.FileSubject)
+            };
 
-            // Toplam kayıt sayısı
+            // === Toplam kayıt ===
             var totalItems = await query.CountAsync();
 
-            // Sayfalama
-            var skip = (parameters.Page - 1) * parameters.PageSize;
+            // === Sayfalama ===
+            var page = parameters.Page <= 0 ? 1 : parameters.Page;
+            var pageSize = parameters.PageSize <= 0 ? 10 : parameters.PageSize;
+            var skip = (page - 1) * pageSize;
+
             var cases = await query
                 .Skip(skip)
-                .Take(parameters.PageSize)
-                .Include(c => c.WorkingGroup)
+                .Take(pageSize)
                 .ToListAsync();
 
             var caseDtos = _mapper.Map<List<CaseDto>>(cases);
 
             return new PaginatedResponse<CaseDto>
             {
-                Page = parameters.Page,
-                PageSize = parameters.PageSize,
+                Page = page,
+                PageSize = pageSize,
                 TotalItems = totalItems,
-                TotalPages = (int)Math.Ceiling(totalItems / (double)parameters.PageSize),
+                TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize),
                 Items = caseDtos
             };
         }
@@ -99,11 +124,22 @@ namespace dava_avukat_eslestirme_asistani.Services
         public async Task<Case?> UpdateCaseAsync(int id, CaseUpdateDto dto)
         {
             var entity = await _caseRepository.GetByIdAsync(id);
-            if (entity is null) return null;
+            if (entity is null || entity.IsDeleted) return null;
 
-            // PUT mantığı: tüm alanları güncelle
+            // PUT mantığı: zorunlu alanlar yine gönderilmiş olmalı
+            if (string.IsNullOrWhiteSpace(dto.ContactClient) ||
+                string.IsNullOrWhiteSpace(dto.FileSubject) ||
+                string.IsNullOrWhiteSpace(dto.CaseResponsible) ||
+                string.IsNullOrWhiteSpace(dto.PrmNatureOfAssignment) ||
+                string.IsNullOrWhiteSpace(dto.PrmCasePlaceofUseSubject) ||
+                string.IsNullOrWhiteSpace(dto.SubjectMatterDescription) ||
+                string.IsNullOrWhiteSpace(dto.City) ||
+                string.IsNullOrWhiteSpace(dto.Description))
+            {
+                throw new ArgumentException("Zorunlu alanlar boş olamaz.");
+            }
+
             _mapper.Map(dto, entity);
-
             await _caseRepository.SaveAsync();
             return entity;
         }
@@ -114,10 +150,12 @@ namespace dava_avukat_eslestirme_asistani.Services
             var entity = await _caseRepository.GetByIdAsync(id);
             if (entity is null) return false;
 
-            if (!entity.IsActive)
-                return true; // zaten silik kabul edelim
+            if (entity.IsDeleted) return true; // zaten silinmiş
 
-            entity.IsActive = false;
+            entity.IsDeleted = true;
+            entity.DeletedAt = DateTime.UtcNow;
+            entity.DeletedBy = "system"; // İstersen controller’dan kullanıcı adı geçirilebilir.
+
             await _caseRepository.SaveAsync();
             return true;
         }

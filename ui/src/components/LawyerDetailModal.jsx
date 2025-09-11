@@ -1,74 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUserTie, FaMapMarkerAlt, FaStar, FaBriefcase, FaLanguage, FaHandshake } from 'react-icons/fa';
+import { FaTimes, FaUserTie, FaMapMarkerAlt, FaBriefcase, FaLanguage, FaIdBadge, FaCalendarAlt, FaAt, FaPhone } from 'react-icons/fa';
 import apiClient, { API_CONFIG } from '../config/api';
 import "../App.css";
 
-// güvenli dizi
 function toArray(v) {
   if (Array.isArray(v)) return v;
   if (typeof v === 'string') return v.split(',').map(s => s.trim()).filter(Boolean);
   return [];
 }
-
-// --- çalışma grupları global cache (modal için) ---
-let _wgMap = null;
-let _wgPromise = null;
-
-const WG_URLS = [
-  (API_CONFIG?.ENDPOINTS?.WORKING_GROUPS) || '/working-groups',
-  '/workinggroups',
-  '/workinggroup',
-  '/groups',
-];
-
-function extractArray(payload) {
-  if (!payload) return [];
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload.items)) return payload.items;
-  if (Array.isArray(payload.data)) return payload.data;
-  return [];
-}
-function buildWgMap(arr) {
-  const map = {};
-  for (const g of arr) {
-    const id = g?.id ?? g?.groupId ?? g?.wgId;
-    const name = g?.name ?? g?.title ?? g?.groupName ?? g?.displayName;
-    if (id != null && name) map[String(id)] = String(name);
-  }
-  return map;
-}
-
-async function getWorkingGroupMap() {
-  if (_wgMap) return _wgMap;
-  if (_wgPromise) return _wgPromise;
-
-  _wgPromise = (async () => {
-    for (const url of WG_URLS) {
-      try {
-        const res = await apiClient.get(url);
-        const arr = extractArray(res?.data);
-        if (arr.length) {
-          _wgMap = buildWgMap(arr);
-          return _wgMap;
-        }
-      } catch (_) {}
-    }
-    _wgMap = {};
-    return _wgMap;
-  })();
-
-  return _wgPromise;
-}
+const fmtDate = (iso) => {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString();
+};
+const yearsFrom = (iso) => {
+  if (!iso) return 0;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 0;
+  const now = new Date();
+  let y = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  const dd = now.getDate() - d.getDate();
+  if (m < 0 || (m === 0 && dd < 0)) y -= 1;
+  return Math.max(0, y);
+};
 
 const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
   const [lawyer, setLawyer] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [wgMap, setWgMap] = useState({});
 
   useEffect(() => {
     if (isOpen && lawyerId) {
       fetchLawyerDetails();
-      getWorkingGroupMap().then(setWgMap);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, lawyerId]);
@@ -88,18 +51,8 @@ const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const languages = toArray(lawyer?.languages ?? lawyer?.languagesSpoken ?? []);
-
-  const inlineGroupName =
-    lawyer?.workingGroup?.name ||
-    lawyer?.workingGroupName ||
-    lawyer?.workingGroupTitle ||
-    null;
-
-  const idForMap = lawyer?.workingGroupId ?? lawyer?.workingGroupID ?? lawyer?.groupId;
-  const mapName = idForMap != null ? wgMap[String(idForMap)] : null;
-
-  const workingGroupName = inlineGroupName || mapName || "-";
+  const languages = toArray(lawyer?.languages);
+  const expYears = yearsFrom(lawyer?.startDate);
 
   return (
     <div className="modal-overlay lawyer-modal" onClick={onClose}>
@@ -121,10 +74,12 @@ const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
             <div className="lawyer-header">
               <div className="lawyer-avatar"><FaUserTie /></div>
               <div className="lawyer-info">
-                <h3>{lawyer.name}</h3>
-                <div className="lawyer-rating">
-                  <FaStar className="star-icon" />
-                  <span>{(lawyer.rating ?? 0)}/5.0</span>
+                <h3>{lawyer.fullName}</h3>
+                <div className="lawyer-rating" style={{ gap: 8 }}>
+                  <span className={`badge ${lawyer.isActive ? 'badge-success' : 'badge-muted'}`}>
+                    {lawyer.isActive ? 'Aktif' : 'Pasif'}
+                  </span>
+                  {lawyer.title && <span className="badge badge-info">{lawyer.title}</span>}
                 </div>
               </div>
             </div>
@@ -133,15 +88,15 @@ const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
               <div className="stat-item">
                 <FaBriefcase className="stat-icon" />
                 <div>
-                  <span className="stat-value">{lawyer.experienceYears ?? 0}</span>
+                  <span className="stat-value">{expYears}</span>
                   <span className="stat-label">Yıl Deneyim</span>
                 </div>
               </div>
               <div className="stat-item">
-                <FaHandshake className="stat-icon" />
+                <FaCalendarAlt className="stat-icon" />
                 <div>
-                  <span className="stat-value">{lawyer.totalCasesHandled ?? 0}</span>
-                  <span className="stat-label">Toplam Dava</span>
+                  <span className="stat-value">{fmtDate(lawyer.startDate)}</span>
+                  <span className="stat-label">Başlangıç</span>
                 </div>
               </div>
             </div>
@@ -153,26 +108,30 @@ const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
               </div>
 
               <div className="detail-item">
+                <FaAt className="detail-icon" />
+                <span><strong>E-posta:</strong> {lawyer.email || '-'}</span>
+              </div>
+
+              <div className="detail-item">
+                <FaPhone className="detail-icon" />
+                <span><strong>Telefon:</strong> {lawyer.phone || '-'}</span>
+              </div>
+
+              <div className="detail-item">
                 <FaLanguage className="detail-icon" />
                 <span><strong>Diller:</strong> {languages.length ? languages.join(', ') : '-'}</span>
               </div>
 
               <div className="detail-item">
-                <FaHandshake className="detail-icon" />
-                <span><strong>Pro Bono:</strong> {lawyer.availableForProBono ? 'Evet' : 'Hayır'}</span>
-              </div>
-
-              {/* 🔹 kesinlikle AD */}
-              <div className="detail-item">
-                <FaUserTie className="detail-icon" />
-                <span><strong>Çalışma Grubu:</strong> {workingGroupName}</span>
+                <FaIdBadge className="detail-icon" />
+                <span><strong>Kayıt Tipi:</strong> {lawyer.prmEmployeeRecordType || '-'}</span>
               </div>
             </div>
 
-            {lawyer.description && (
+            {lawyer.education && (
               <div className="lawyer-description">
-                <h4>Açıklama</h4>
-                <p>{lawyer.description}</p>
+                <h4>Eğitim</h4>
+                <p>{lawyer.education}</p>
               </div>
             )}
 

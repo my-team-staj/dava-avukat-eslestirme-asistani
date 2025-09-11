@@ -6,38 +6,45 @@ namespace dava_avukat_eslestirme_asistani.Entities
     {
         public int Id { get; set; }
 
-        public string Title { get; set; } = string.Empty;
-
-        public string Description { get; set; } = string.Empty;
+        // === Zorunlu Alanlar ===
+        [Required]
+        public string ContactClient { get; set; } = string.Empty;
 
         [Required]
-        public DateTime FiledDate { get; set; }
+        public string FileSubject { get; set; } = string.Empty;
 
+        [Required]
+        public string CaseResponsible { get; set; } = string.Empty;
 
+        [Required]
+        public string PrmNatureOfAssignment { get; set; } = string.Empty;
+
+        [Required]
+        public string PrmCasePlaceofUseSubject { get; set; } = string.Empty;
+
+        [Required]
+        public string SubjectMatterDescription { get; set; } = string.Empty;
+
+        [Required]
+        public bool IsToBeInvoiced { get; set; } = false;
+
+        [Required]
         public string City { get; set; } = string.Empty;
 
-        public string Language { get; set; } = "Türkçe";
+        [Required]
+        public string Description { get; set; } = string.Empty;
 
-        public string UrgencyLevel { get; set; } = "Normal";
+        // === Opsiyonel Alanlar ===
+        public string? Country { get; set; }
+        public string? County { get; set; }
+        public string? Address { get; set; }
+        public string? Attorney1 { get; set; }
+        public string? Attorney2 { get; set; }
+        public string? Attorney3 { get; set; }
 
-        public bool RequiresProBono { get; set; } = false;
-
-        public int EstimatedDurationInDays { get; set; } = 0;
-
-        public string RequiredExperienceLevel { get; set; } = "Orta";
-
-        public bool IsActive { get; set; } = true;
-
-        public int? WorkingGroupId { get; set; }
-
-        public virtual WorkingGroup? WorkingGroup { get; set; }
-
+        // === Soft delete alanları ===
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
         public string? DeletedBy { get; set; }
-
     }
-
-
-
 }

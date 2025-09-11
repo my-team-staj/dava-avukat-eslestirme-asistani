@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System;
+using System.Collections.Generic; // ✅ List<>, Dictionary<>
 
 namespace dava_avukat_eslestirme_asistani.Controllers
 {
@@ -201,6 +202,17 @@ VALUES (@CaseId, @LawyerId, SYSUTCDATETIME(), @ChosenBy);";
             }
 
             return Ok(list);
+        }
+
+        /// <summary>
+        /// ✅ By-Case GET route (frontend’in ilk denediği yol)
+        /// GET /api/match/choices/by-case/{caseId}
+        /// </summary>
+        [HttpGet("choices/by-case/{caseId:int}")]
+        public Task<ActionResult<IEnumerable<ChoiceDto>>> ListChoicesByCase([FromRoute] int caseId)
+        {
+            // Mevcut ListChoices'i yeniden kullanıyoruz
+            return ListChoices(caseId);
         }
 
         // =========================

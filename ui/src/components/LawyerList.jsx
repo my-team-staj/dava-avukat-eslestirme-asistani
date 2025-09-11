@@ -8,22 +8,74 @@ import ConfirmDialog from "./ConfirmDialog";
 
 const API_BASE = "https://localhost:60227/api";
 
+/* =========================
+   Gizlilik / Maskeleme Yardımcıları
+   ========================= */
+
+/** "Ahmet" -> "Ahm**", "Ali" -> "Ali*", "Ay" -> "A*" */
+function maskWordKeepFirst3(word = "") {
+  const w = String(word).trim();
+  if (!w) return "";
+  if (w.length <= 1) return "*";                 // tek harfse tamamen yıldız
+  if (w.length <= 2) return w[0] + "*";          // 2 harfse sonu yıldız
+  const visible = 3;
+  return w.slice(0, visible) + "*".repeat(w.length - visible);
+}
+
+/** "Ahmet Yılmaz" -> "Ahm** Yıl***" */
+function maskFullName(name = "") {
+  return String(name)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(maskWordKeepFirst3)
+    .join(" ");
+}
+
+/** "ahmet.yilmaz@example.com" -> "ahm***@e***" (domain de kısmen maskeli) */
+function maskEmail(email = "") {
+  const s = String(email).trim();
+  const [local, domain] = s.split("@");
+  if (!local || !domain) return maskWordKeepFirst3(s);
+  const localMasked =
+    local.length <= 3
+      ? maskWordKeepFirst3(local)
+      : local.slice(0, 3) + "*".repeat(local.length - 3);
+
+  // domain'i "e***" gibi kısalt
+  const domainMasked =
+    domain.length <= 1 ? "*" : domain.slice(0, 1) + "***";
+
+  return `${localMasked}@${domainMasked}`;
+}
+
+/** Telefonun ilk 3 rakamını koru, kalan tüm rakamları yıldızla (semboller kalabilir) */
+function maskPhone(phone = "") {
+  const s = String(phone);
+  let digitCount = 0;
+  return s.replace(/\d/g, (d) => {
+    digitCount += 1;
+    return digitCount <= 3 ? d : "*";
+  });
+}
+
 function LawyerList() {
   const [lawyers, setLawyers] = useState([]);
   const [cities, setCities] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
   const [editingLawyerId, setEditingLawyerId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // 👉 Yeni query: availableForProBono kaldırıldı, sortBy=FullName
   const [query, setQuery] = useState({
     page: 1,
     pageSize: 5,
     city: "",
     isActive: "true",
-    availableForProBono: "",
-    sortBy: "name",
+    sortBy: "FullName",
     sortOrder: "asc",
     searchTerm: "",
   });
+
   const [searchInput, setSearchInput] = useState("");
   const [totalPages, setTotalPages] = useState(1);
 
@@ -51,7 +103,7 @@ function LawyerList() {
     const map = {};
     for (const g of arr) {
       const id = g?.id ?? g?.groupId ?? g?.wgId;
-      const name = g?.name ?? g?.title ?? g?.groupName ?? g?.displayName;
+      const name = g?.groupName ?? g?.name ?? g?.title ?? g?.displayName;
       if (id != null && name) map[String(id)] = String(name);
     }
     return map;
@@ -80,12 +132,11 @@ function LawyerList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  // Debounce arama için useEffect
+  // Debounce arama
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setQuery(prev => ({ ...prev, searchTerm: searchInput, page: 1 }));
-    }, 500); // 500ms gecikme
-
+    }, 500);
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
@@ -125,14 +176,15 @@ function LawyerList() {
     );
   };
 
+  // 👉 Artık FullName’e göre sıralıyoruz
   const handleSortByName = () => {
     setQuery(prev => {
-      if (prev.sortBy === "name") {
+      if (prev.sortBy === "FullName") {
         if (prev.sortOrder === "asc")  return { ...prev, sortOrder: "desc", page: 1 };
         if (prev.sortOrder === "desc") return { ...prev, sortBy: "", sortOrder: "", page: 1 };
         return { ...prev, sortOrder: "asc", page: 1 };
       }
-      return { ...prev, sortBy: "name", sortOrder: "asc", page: 1 };
+      return { ...prev, sortBy: "FullName", sortOrder: "asc", page: 1 };
     });
   };
 
@@ -142,16 +194,11 @@ function LawyerList() {
     if (e.target.classList.contains("modal-overlay")) closeEditModal();
   };
 
+  // Önce DTO’daki workGroup alanını kullan; yoksa id’den map et.
   const groupNameFor = (l) => {
-    const inline =
-      l?.workingGroup?.name ||
-      l?.workingGroupName ||
-      l?.workingGroupTitle;
-    if (inline) return inline;
-
-    const id = l?.workingGroupId ?? l?.workingGroupID ?? l?.groupId;
+    if (l?.workGroup) return l.workGroup;
+    const id = l?.workGroupId ?? l?.workingGroupId ?? l?.groupId;
     if (id == null) return "-";
-
     return wgMap[String(id)] ?? (wgReady ? "-" : "Yükleniyor…");
   };
 
@@ -183,7 +230,7 @@ function LawyerList() {
           <div className="search-input-container">
             <input
               type="text"
-              placeholder="Avukat adı, e-posta veya baro no ile ara..."
+              placeholder="Ad, e-posta, unvan veya dil ile ara..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="search-input"
@@ -216,21 +263,6 @@ function LawyerList() {
             <option value="false">Pasif</option>
           </select>
         </div>
-
-        <label className="filter-checkbox">
-          <input
-            type="checkbox"
-            checked={query.availableForProBono === "true"}
-            onChange={(e) =>
-              setQuery(prev => ({
-                ...prev,
-                availableForProBono: e.target.checked ? "true" : "",
-                page: 1,
-              }))
-            }
-          />
-          Pro Bono
-        </label>
       </div>
 
       {/* Liste */}
@@ -246,15 +278,15 @@ function LawyerList() {
             <tr>
               <th onClick={handleSortByName} style={{ cursor: "pointer" }}>
                 İsim{" "}
-                {query.sortBy === "name" &&
+                {query.sortBy === "FullName" &&
                   (query.sortOrder === "asc" ? "▲" : query.sortOrder === "desc" ? "▼" : "")}
               </th>
               <th>Şehir</th>
               <th>E-posta</th>
               <th>Telefon</th>
-              <th>Baro No</th>
-              <th>Pro Bono</th>
-              <th>Puan</th>
+              <th>Unvan</th>
+              <th>Çalışma Grubu</th>
+              <th>Başlangıç</th>
               <th>Durum</th>
               <th>İşlemler</th>
             </tr>
@@ -262,16 +294,22 @@ function LawyerList() {
           <tbody>
             {lawyers.map((l) => {
               const isOpen = expandedRows.includes(l.id);
+
+              // 🔒 Yalnızca ekranda maskeleniyor
+              const maskedName = maskFullName(l.fullName || "");
+              const maskedEmail = maskEmail(l.email || "");
+              const maskedPhone = maskPhone(l.phone || "");
+
               return (
                 <React.Fragment key={l.id}>
                   <tr>
-                    <td>{l.name}</td>
+                    <td>{maskedName}</td>
                     <td>{l.city}</td>
-                    <td>{l.email}</td>
-                    <td>{l.phone}</td>
-                    <td>{l.baroNumber}</td>
-                    <td>{l.availableForProBono ? "Evet" : "Hayır"}</td>
-                    <td>{l.rating}</td>
+                    <td>{maskedEmail}</td>
+                    <td>{maskedPhone}</td>
+                    <td>{l.title || "-"}</td>
+                    <td>{groupNameFor(l)}</td>
+                    <td>{l.startDate ? new Date(l.startDate).toLocaleDateString() : "-"}</td>
                     <td>{l.isActive ? "Aktif" : "Pasif"}</td>
                     <td className="actions-cell">
                       <button
@@ -303,10 +341,9 @@ function LawyerList() {
                     <tr>
                       <td colSpan="9">
                         <div style={{ background: "#f2f5fa", padding: "12px", borderRadius: "10px" }}>
+                          <strong>Diller:</strong> {l.languages || "-"} <br />
                           <strong>Eğitim:</strong> {l.education || "-"} <br />
-                          <strong>Toplam Dava:</strong> {l.totalCasesHandled || 0} <br />
-                          <strong>Diller:</strong> {l.languagesSpoken || "-"} <br />
-                          <strong>Pro Bono:</strong> {l.availableForProBono ? "Evet" : "Hayır"} <br />
+                          <strong>Kayıt Tipi:</strong> {l.prmEmployeeRecordType || "-"} <br />
                           <strong>Çalışma Grubu:</strong> {groupNameFor(l)}
                         </div>
                       </td>
