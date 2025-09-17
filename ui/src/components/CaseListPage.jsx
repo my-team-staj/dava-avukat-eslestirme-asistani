@@ -1,5 +1,6 @@
 // ui/src/components/CaseListPage.jsx
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../App.css";
 import { toast } from "react-toastify";
@@ -35,6 +36,7 @@ function maskName(input) {
 }
 
 export default function CaseListPage() {
+  const navigate = useNavigate();
   const [cases, setCases] = useState([]);
   const [cities, setCities] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
@@ -142,9 +144,28 @@ export default function CaseListPage() {
 
   return (
     <div className="container">
-      <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        Dava Listesi
-      </h2>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: 'var(--space-6)'
+      }}>
+        <h2 style={{ 
+          fontSize: 'var(--font-size-3xl)',
+          fontWeight: 'var(--font-weight-bold)',
+          color: 'var(--text-primary)',
+          margin: 0
+        }}>
+          Davalar
+        </h2>
+        <button
+          className="btn btn-primary-flat btn-compact"
+          aria-label="Yeni dava ekle"
+          onClick={() => navigate("/davalar/yeni")}
+        >
+          Yeni Dava Ekle
+        </button>
+      </div>
 
       {/* Filtreler */}
       <div className="filters">
