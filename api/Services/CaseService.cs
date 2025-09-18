@@ -19,8 +19,8 @@ namespace dava_avukat_eslestirme_asistani.Services
 
         public async Task<Case> CreateCaseAsync(CaseCreateDto caseDto)
         {
-            // Controller tarafında [ApiController] + DataAnnotations validasyonu çalışsa da
-            // servis katmanında da minimum koruma:
+            // Controller tarafında [ApiController] + DataAnnotations çalışsa da,
+            // servis katmanında minimum koruma:
             if (string.IsNullOrWhiteSpace(caseDto.ContactClient) ||
                 string.IsNullOrWhiteSpace(caseDto.FileSubject) ||
                 string.IsNullOrWhiteSpace(caseDto.CaseResponsible) ||
@@ -54,16 +54,16 @@ namespace dava_avukat_eslestirme_asistani.Services
 
             // === Filtreleme ===
             if (!string.IsNullOrWhiteSpace(parameters.City))
-                query = query.Where(c => c.City.Contains(parameters.City));
+                query = query.Where(c => (c.City ?? "").Contains(parameters.City));
 
             if (!string.IsNullOrWhiteSpace(parameters.FileSubject))
-                query = query.Where(c => c.FileSubject.Contains(parameters.FileSubject));
+                query = query.Where(c => (c.FileSubject ?? "").Contains(parameters.FileSubject));
 
             if (!string.IsNullOrWhiteSpace(parameters.CaseResponsible))
-                query = query.Where(c => c.CaseResponsible.Contains(parameters.CaseResponsible));
+                query = query.Where(c => (c.CaseResponsible ?? "").Contains(parameters.CaseResponsible));
 
             if (!string.IsNullOrWhiteSpace(parameters.ContactClient))
-                query = query.Where(c => c.ContactClient.Contains(parameters.ContactClient));
+                query = query.Where(c => (c.ContactClient ?? "").Contains(parameters.ContactClient));
 
             if (parameters.IsToBeInvoiced.HasValue)
                 query = query.Where(c => c.IsToBeInvoiced == parameters.IsToBeInvoiced.Value);
@@ -73,16 +73,17 @@ namespace dava_avukat_eslestirme_asistani.Services
             {
                 var term = parameters.SearchTerm.ToLower();
                 query = query.Where(c =>
-                    c.FileSubject.ToLower().Contains(term) ||
-                    c.SubjectMatterDescription.ToLower().Contains(term) ||
-                    c.Description.ToLower().Contains(term) ||
-                    c.ContactClient.ToLower().Contains(term) ||
-                    c.CaseResponsible.ToLower().Contains(term) ||
-                    c.City.ToLower().Contains(term));
+                    (c.FileSubject ?? "").ToLower().Contains(term) ||
+                    (c.SubjectMatterDescription ?? "").ToLower().Contains(term) ||
+                    (c.Description ?? "").ToLower().Contains(term) ||
+                    (c.ContactClient ?? "").ToLower().Contains(term) ||
+                    (c.CaseResponsible ?? "").ToLower().Contains(term) ||
+                    (c.City ?? "").ToLower().Contains(term));
             }
 
             // === Sıralama ===
-            var sortBy = parameters.SortBy?.ToLower();
+            var sortByRaw = parameters.SortBy ?? string.Empty;
+            var sortBy = new string(sortByRaw.ToLower().Where(ch => !char.IsWhiteSpace(ch)).ToArray()); // boşlukları at
             var asc = string.Equals(parameters.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
 
             query = sortBy switch
@@ -91,7 +92,7 @@ namespace dava_avukat_eslestirme_asistani.Services
                 "filesubject" => asc ? query.OrderBy(c => c.FileSubject) : query.OrderByDescending(c => c.FileSubject),
                 "caseresponsible" => asc ? query.OrderBy(c => c.CaseResponsible) : query.OrderByDescending(c => c.CaseResponsible),
                 "city" => asc ? query.OrderBy(c => c.City) : query.OrderByDescending(c => c.City),
-                "isto beinvoiced" => asc ? query.OrderBy(c => c.IsToBeInvoiced) : query.OrderByDescending(c => c.IsToBeInvoiced),
+                "istobeinvoiced" => asc ? query.OrderBy(c => c.IsToBeInvoiced) : query.OrderByDescending(c => c.IsToBeInvoiced),
                 _ => asc ? query.OrderBy(c => c.FileSubject) : query.OrderByDescending(c => c.FileSubject)
             };
 

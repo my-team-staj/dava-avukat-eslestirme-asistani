@@ -21,6 +21,7 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             _logger = logger;
         }
 
+        // --- Create ---
         [HttpPost]
         public async Task<IActionResult> CreateCase([FromBody] CaseCreateDto caseDto)
         {
@@ -29,9 +30,11 @@ namespace dava_avukat_eslestirme_asistani.Controllers
 
             var created = await _caseService.CreateCaseAsync(caseDto);
             var dto = _mapper.Map<CaseDto>(created);
+
             return CreatedAtAction(nameof(GetCaseById), new { id = dto.Id }, dto);
         }
 
+        // --- Get by Id ---
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCaseById(int id)
         {
@@ -43,6 +46,7 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             return Ok(dto);
         }
 
+        // --- Get list (query support) ---
         [HttpGet]
         public async Task<IActionResult> GetCases([FromQuery] CaseQueryParameters parameters)
         {
@@ -50,6 +54,7 @@ namespace dava_avukat_eslestirme_asistani.Controllers
             return Ok(result);
         }
 
+        // --- Update ---
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCase(int id, [FromBody] CaseUpdateDto dto)
         {
@@ -57,18 +62,21 @@ namespace dava_avukat_eslestirme_asistani.Controllers
                 return BadRequest(ModelState);
 
             var updated = await _caseService.UpdateCaseAsync(id, dto);
-            if (updated is null) return NotFound();
+            if (updated is null)
+                return NotFound();
 
             var result = _mapper.Map<CaseDto>(updated);
-            return Ok(result); // İstersen NoContent() yapabiliriz
+            return Ok(result); // alternatif: return NoContent();
         }
 
-        // SOFT DELETE
+        // --- Soft Delete ---
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCase(int id)
         {
             var ok = await _caseService.DeleteCaseAsync(id);
-            if (!ok) return NotFound();
+            if (!ok)
+                return NotFound();
+
             return NoContent();
         }
     }

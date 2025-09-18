@@ -1,4 +1,7 @@
-﻿namespace dava_avukat_eslestirme_asistani.DTOs.Match
+﻿using System;
+using System.Collections.Generic;
+
+namespace dava_avukat_eslestirme_asistani.DTOs.Match
 {
     public record MatchRequest(int CaseId, int TopK = 3);
 
@@ -6,36 +9,32 @@
 
     public record MatchResponse(int CaseId, List<MatchCandidate> Candidates);
 
-    // LLM'e gidecek özetler (Case entity'ye göre güncellendi)
+    /// LLM’e gidecek DAVA özeti (privacy: sadece paylaşılanlar + Description)
     public record CaseSummary(
         int Id,
-        string ContactClient,
         string FileSubject,
-        string CaseResponsible,
         string PrmNatureOfAssignment,
         string PrmCasePlaceofUseSubject,
         string SubjectMatterDescription,
         bool IsToBeInvoiced,
         string City,
         string Description,
-        string? Country,
-        string? County,
-        string? Address,
-        string? Attorney1,
-        string? Attorney2,
-        string? Attorney3
+        int? WorkingGroupId,      // << eklendi (puanlamada bonus için)
+        string? WorkingGroupName  // << eklendi (neden/metin için)
     );
 
-    // Yeni şema ile uyumlu Lawyer kartı
+    /// LLM’e gidecek AVUKAT kartı (privacy: ad/e-posta/telefon yok)
     public record LawyerCard(
         int Id,
-        string FullName,
-        int ExperienceYears,
+        int ExperienceYears,        // StartDate’ten hesaplanıyor
         string City,
         string[] Languages,
         string? Title,
         string? Education,
         int WorkGroupId,
-        string? WorkGroup
+        string? WorkGroup,
+        DateTime? StartDate,              // (paylaşılır)
+        bool IsActive,               // (paylaşılır)
+        string? PrmEmployeeRecordType   // (paylaşılır)
     );
 }
