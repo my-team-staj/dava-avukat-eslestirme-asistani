@@ -264,6 +264,12 @@ const MatchPage = () => {
   const filteredAndSortedMatches = Array.isArray(matches) ? matches
     .sort((a, b) => (readScore(b)) - (readScore(a))) : [];
 
+  // Diğer uygun avukatlar: filtreye uyanlar - önerilenler
+  const topMatchLawyerIds = new Set(
+    (filteredAndSortedMatches || []).map(m => m?.lawyerId).filter(Boolean)
+  );
+  const otherLawyers = (availableLawyers || []).filter(l => !topMatchLawyerIds.has(l?.id ?? l?.lawyerId));
+
   const getScoreBreakdown = (match) => {
     const s = readScore(match);
     const expBonus = Math.min(expOf(match.lawyerId) * 0.02, 0.1);
@@ -338,7 +344,7 @@ const MatchPage = () => {
 
         {matches.length > 0 && (
           <div className="matches-results">
-            <h2>Avukat Öneri Sonuçları</h2>
+            <h2>Önerilen Avukatlar</h2>
 
             {/* Seçilen Dava Bilgileri */}
             <div className="selected-case-info">
@@ -421,7 +427,12 @@ const MatchPage = () => {
                               Detaylı Skoru Göster
                             </button>
                           </td>
-                          <td className="level-cell"><span className="level-star" aria-hidden="true">⭐</span></td>
+                          <td className="level-cell">
+                            <div className="level-wrap">
+                              <span className="level-star" aria-hidden="true">⭐</span>
+                              <span className="level-text">{level.level}</span>
+                            </div>
+                          </td>
                           <td className="reason-cell">
                             <div className="reason-text">
                               {match.reason || 'Sebep belirtilmemiş'}
@@ -475,26 +486,25 @@ const MatchPage = () => {
             {/* Divider */}
             <hr className="muted-divider" />
 
-            {/* Diğer avukatlar bilgi notu (sonuçların altında) */}
+            {/* Diğer Uygun Avukatlar */}
             <div className="other-lawyers-note" role="status" aria-live="polite">
               {loadingAvailableLawyers ? (
                 <span>Uygun avukatlar kontrol ediliyor...</span>
-              ) : availableLawyersCount > 0 ? (
-                <span>Bu filtrelere uyan tüm avukatlar: <strong>{availableLawyersCount}</strong> avukat bulundu</span>
+              ) : otherLawyers.length > 0 ? (
+                <span>Diğer uygun avukatlar: <strong>{otherLawyers.length}</strong> kişi</span>
               ) : (
-                <span>Bu filtrelere uyan başka avukat bulunamadı</span>
+                <span>Diğer uygun avukat bulunamadı</span>
               )}
             </div>
 
-            {/* Diğer avukatlar – notun hemen altında listelenir */}
-            {availableLawyersCount > 0 && (
+            {otherLawyers.length > 0 && (
               <div className="available-lawyers-list">
                 <div className="lawyers-list-header">
-                  <h4>Uygun Avukatlar</h4>
-                  <span className="lawyers-count-badge">{availableLawyersCount} avukat</span>
+                  <h4>Diğer Uygun Avukatlar</h4>
+                  <span className="lawyers-count-badge">{otherLawyers.length}</span>
                 </div>
                 <div className="lawyers-grid">
-                  {availableLawyers.map((lawyer, index) => {
+                  {otherLawyers.map((lawyer, index) => {
                     const exp = yearsFrom(lawyer.startDate);
                     return (
                       <div key={lawyer.id || index} className="lawyer-card-mini">
