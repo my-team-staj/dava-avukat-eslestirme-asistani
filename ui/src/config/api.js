@@ -11,6 +11,15 @@ export const API_CONFIG = {
     MATCH_CHOOSE: "/match/choose",
     MATCH_CHOICES: "/match/choices",
     MATCH_DELETE_BY_CASE: "/match/choices/by-case",
+    
+    // New endpoints for enhanced case form
+    CONTACTS: "/contacts",
+    EMPLOYEES: "/employees",
+    STATUSES: "/statuses",
+    PRIORITIES: "/priorities",
+    FILE_TYPES: "/file-types",
+    TARIFF_TYPES: "/tariff-types",
+    COURTS: "/courts",
   },
   TIMEOUT: 30000,
   HEADERS: {

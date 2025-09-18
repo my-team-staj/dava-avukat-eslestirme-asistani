@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../App.css";
 import { toast } from "react-toastify";
-import CaseUpdateModal from "./CaseUpdateModal";
 import ConfirmDialog from "./ConfirmDialog";
 
 const API_BASE = "https://localhost:60227/api";
@@ -54,8 +53,6 @@ export default function CaseListPage() {
   });
   const [searchInput, setSearchInput] = useState("");
 
-  const [selectedCase, setSelectedCase] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Silme için modal state
   const [confirm, setConfirm] = useState({ open: false, id: null });
@@ -117,14 +114,8 @@ export default function CaseListPage() {
     });
   };
 
-  const handleEditClick = async (caseId) => {
-    try {
-      const res = await axios.get(`${API_BASE}/cases/${caseId}`);
-      setSelectedCase(res.data);
-      setIsModalOpen(true);
-    } catch (error) {
-      console.error("Dava bilgisi alınamadı:", error);
-    }
+  const handleEditClick = (caseId) => {
+    navigate(`/davalar/${caseId}/duzenle`);
   };
 
   // Silme — onay modalı
@@ -305,14 +296,6 @@ export default function CaseListPage() {
         ))}
       </div>
 
-      {/* Güncelleme Modalı */}
-      {isModalOpen && (
-        <CaseUpdateModal
-          caseData={selectedCase}
-          onClose={() => setIsModalOpen(false)}
-          onUpdated={fetchCases}
-        />
-      )}
 
       {/* Silme Onayı Modalı */}
       <ConfirmDialog

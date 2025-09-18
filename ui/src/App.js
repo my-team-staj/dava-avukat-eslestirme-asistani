@@ -8,6 +8,7 @@ import LawyerAddForm from "./components/LawyerAddForm";
 import LawyerList from "./components/LawyerList";
 import CreateCaseForm from "./components/CreateCaseForm";
 import CaseListPage from "./components/CaseListPage";
+import CaseEditPage from "./components/CaseEditPage.tsx";
 import MatchPage from "./components/MatchPage";
 import { ToastProvider } from "./components/Toast"; // kendi provider
 import { ToastContainer } from "react-toastify";
@@ -30,6 +31,7 @@ function App() {
 
               <Route path="/davalar" element={<CaseListPage />} />
               <Route path="/davalar/yeni" element={<CreateCaseForm />} />
+              <Route path="/davalar/:id/duzenle" element={<CaseEditPage />} />
 
               {/* Geri uyumluluk için eski rotaları koru */}
               <Route path="/cases" element={<CaseListPage />} />
