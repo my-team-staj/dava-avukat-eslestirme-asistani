@@ -27,10 +27,6 @@ const MatchPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
-  const [filterScore, setFilterScore] = useState(80);
-  const [sortBy, setSortBy] = useState('score'); // 'score' | 'experience'
-  const [viewMode, setViewMode] = useState('cards');
-  const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
 
   const [lawyerNamesById, setLawyerNamesById] = useState({});
   const [lawyerDetailsById, setLawyerDetailsById] = useState({});
@@ -39,6 +35,7 @@ const MatchPage = () => {
   const [availableLawyersCount, setAvailableLawyersCount] = useState(0);
   const [showAvailableLawyers, setShowAvailableLawyers] = useState(false);
   const [loadingAvailableLawyers, setLoadingAvailableLawyers] = useState(false);
+  const [expandedScoreRow, setExpandedScoreRow] = useState(null);
 
   // ---- Skor yardımcıları ----
   const pickScore01 = (obj) => {
@@ -265,10 +262,13 @@ const MatchPage = () => {
   const expOf = (lawyerId) => yearsFrom(lawyerDetailsById[lawyerId]?.startDate);
 
   const filteredAndSortedMatches = Array.isArray(matches) ? matches
-    .filter(match => match && readScore(match) >= filterScore / 100)
-    .sort((a, b) => (sortBy === 'experience'
-      ? expOf(b.lawyerId) - expOf(a.lawyerId)
-      : (readScore(b)) - (readScore(a)))) : [];
+    .sort((a, b) => (readScore(b)) - (readScore(a))) : [];
+
+  // Diğer uygun avukatlar: filtreye uyanlar - önerilenler
+  const topMatchLawyerIds = new Set(
+    (filteredAndSortedMatches || []).map(m => m?.lawyerId).filter(Boolean)
+  );
+  const otherLawyers = (availableLawyers || []).filter(l => !topMatchLawyerIds.has(l?.id ?? l?.lawyerId));
 
   const getScoreBreakdown = (match) => {
     const s = readScore(match);
@@ -284,6 +284,11 @@ const MatchPage = () => {
       total: s
     };
   };
+  const toggleScoreRow = (rowId) => {
+    setExpandedScoreRow(prev => (prev === rowId ? null : rowId));
+  };
+
+  // "Sebep" metni artık tam gösteriliyor; aç/kapa mantığı kaldırıldı
 
   // Seçilen dava bilgileri
   const sel = selectedCase ? cases.find(c => (c.id ?? c.Id) === selectedCase) : null;
@@ -300,8 +305,7 @@ const MatchPage = () => {
   return (
     <div className="match-page">
       <div className="match-header">
-        <h1>Dava-Avukat Eşleştirme</h1>
-        <p>AI destekli akıllı eşleştirme sistemi ile en uygun avukatı bulun</p>
+        <h1>Avukat Bul</h1>
       </div>
 
       <div className="match-container">
@@ -332,7 +336,7 @@ const MatchPage = () => {
                 <option value={10}>10 Avukat</option>
               </select>
               <button onClick={handleMatch} disabled={!selectedCase || loading} className="match-button">
-                {loading ? 'Eşleştirme Önerileri Yapılıyor' : 'Eşleştirme Önerileri Al'}
+                {loading ? 'Eşleştirme Önerileri Yapılıyor' : 'Avukat Önerileri Al'}
               </button>
             </div>
           </div>
@@ -340,7 +344,7 @@ const MatchPage = () => {
 
         {matches.length > 0 && (
           <div className="matches-results">
-            <h2>Eşleştirme Sonuçları</h2>
+            <h2>Önerilen Avukatlar</h2>
 
             {/* Seçilen Dava Bilgileri */}
             <div className="selected-case-info">
@@ -354,78 +358,9 @@ const MatchPage = () => {
               </div>
             </div>
 
-            {/* Uygun Avukatlar (şehir bazlı) */}
-            <div className="available-lawyers-section">
-              <div className="available-lawyers-header">
-                <div className="lawyers-count">
-                  {loadingAvailableLawyers ? (
-                    <span className="loading-text">Uygun avukatlar kontrol ediliyor...</span>
-                  ) : availableLawyersCount > 0 ? (
-                    <span className="count-text"><strong>{availableLawyersCount}</strong> avukat bulundu</span>
-                  ) : (
-                    <span className="no-lawyers-text">Bu dava için kriterlere uyan avukat bulunamadı</span>
-                  )}
-                </div>
-                {availableLawyersCount > 0 && (
-                  <button className="toggle-lawyers-btn" onClick={() => setShowAvailableLawyers(!showAvailableLawyers)}>
-                    {showAvailableLawyers ? '🔼 Gizle' : '🔽 Göster'}
-                  </button>
-                )}
-              </div>
+            {/* — Sonuçlardan sonra bilgi notu gösterilecek; listelenen avukatlar yukarıda */}
 
-              {showAvailableLawyers && availableLawyersCount > 0 && (
-                <div className="available-lawyers-list">
-                  <div className="lawyers-list-header">
-                    <h4>Uygun Avukatlar</h4>
-                    <span className="lawyers-count-badge">{availableLawyersCount} avukat</span>
-                  </div>
-                  <div className="lawyers-grid">
-                    {availableLawyers.map((lawyer, index) => {
-                      const exp = yearsFrom(lawyer.startDate);
-                      return (
-                        <div key={lawyer.id || index} className="lawyer-card-mini">
-                          <div className="lawyer-info">
-                            <div className="lawyer-name">{lawyer.fullName}</div>
-                            <div className="lawyer-details">
-                              <span className="lawyer-city">📍 {lawyer.city}</span>
-                              <span className="lawyer-experience">⚖️ {exp} yıl</span>
-                              {lawyer.title && <span className="pro-bono-badge">{lawyer.title}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sonuç Kontrolleri */}
-            <div className="results-header">
-              <div className="view-controls">
-                <button className={`view-btn ${viewMode === 'cards' ? 'active' : ''}`} onClick={() => setViewMode('cards')}>📋 Kart Görünümü</button>
-                <button className={`view-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>📊 Tablo Görünümü</button>
-              </div>
-
-              <div className="filter-controls">
-                <div className="filter-group">
-                  <label style={{ marginRight: 8 }}>Sırala:</label>
-                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="form-select">
-                    <option value="score">Skor</option>
-                    <option value="experience">Deneyim</option>
-                  </select>
-                </div>
-                <div className="filter-group">
-                  <label htmlFor="filterScore">Min. Skor: {filterScore}%</label>
-                  <input type="range" id="filterScore" min="0" max="100" value={filterScore}
-                         onChange={(e) => setFilterScore(Number(e.target.value))} className="score-slider" />
-                </div>
-              </div>
-
-              <button className="score-breakdown-toggle" onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}>
-                {showScoreBreakdown ? '🔽 Skor Detayını Gizle' : '🔼 Skor Detayını Göster'}
-              </button>
-            </div>
+            {/* Sonuç Kontrolleri Kaldırıldı (Sırala & Skor Detayı Göster) */}
 
             {/* İstatistikler / Kart / Tablo */}
             <div className="match-stats">
@@ -453,56 +388,19 @@ const MatchPage = () => {
               </div>
             </div>
 
-            {viewMode === 'cards' && (
-              <div className="matches-grid">
-                {filteredAndSortedMatches.map((match, index) => {
-                  const s = readScore(match);
-                  return (
-                    <div key={match.lawyerId || index} className="match-card">
-                      <div className="match-header">
-                        <span className="match-rank">#{index + 1}</span>
-                        <div className="match-score">
-                          <div className="score-circle">
-                            <span className="score-number">{s.toFixed(2)}</span>
-                            <svg className="score-ring" viewBox="0 0 36 36">
-                              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                    fill="none" stroke={getScoreColor(s)} strokeWidth="3"
-                                    strokeDasharray={`${(s * 100).toFixed(0)}, 100`}
-                                    strokeLinecap="round" />
-                            </svg>
-                          </div>
-                          <span className="score-text">{getScoreText(s)}</span>
-                        </div>
-                      </div>
+            {/* Kart görünümü tamamen kaldırıldı */}
 
-                      <div className="match-content">
-                        <h3>Avukat: {lawyerName(match.lawyerId)}</h3>
-                        <p className="match-reason">{match.reason || 'Sebep belirtilmemiş'}</p>
-                        <div className="score-level">
-                          {(() => { const level = getScoreLevel(s);
-                            return <span style={{ color: level.color }}>{level.icon} {level.level}</span>; })()}
-                        </div>
-                      </div>
-
-                      <div className="match-actions">
-                        <button className="btn-details" onClick={() => handleLawyerDetails(match.lawyerId)} disabled={!match.lawyerId}>
-                          Detayları Gör
-                        </button>
-                        <button className="primary-btn" onClick={() => handleChoose(match)}
-                                disabled={!selectedCase || !match.lawyerId} style={{ marginLeft: 8 }}>
-                          Bu Avukatı Eşleştir
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {viewMode === 'table' && (
+            {
               <div className="matches-table-container">
                 <table className="matches-table">
+                  <colgroup>
+                    <col style={{ width: '56px' }} />
+                    <col style={{ width: '220px' }} />
+                    <col style={{ width: '220px' }} />
+                    <col style={{ width: '80px' }} />
+                    <col />
+                    <col style={{ width: '220px' }} />
+                  </colgroup>
                   <thead>
                     <tr><th>Sıra</th><th>Avukat</th><th>Skor</th><th>Seviye</th><th>Sebep</th><th>İşlemler</th></tr>
                   </thead>
@@ -510,46 +408,113 @@ const MatchPage = () => {
                     {filteredAndSortedMatches.map((match, index) => {
                       const s = readScore(match);
                       const level = getScoreLevel(s);
+                      const rowId = match.lawyerId || index;
                       return (
-                        <tr key={match.lawyerId || index}>
+                        <React.Fragment>
+                        <tr key={rowId + '-row'}>
                           <td className="rank-cell">#{index + 1}</td>
                           <td className="lawyer-id-cell">{lawyerName(match.lawyerId)}</td>
                           <td className="score-cell">
-                            <div className="table-score">
-                              <span className="score-value">{s.toFixed(2)}</span>
-                              <div className="score-bar"><div className="score-fill" style={{ width: `${s * 100}%`, backgroundColor: getScoreColor(s) }} /></div>
+                            <span className="score-badge" data-score={s}>{Math.round(s * 100)}%</span>
+                            <button
+                              type="button"
+                              className="score-detail-btn"
+                              aria-expanded={expandedScoreRow === rowId}
+                              aria-controls={`score-detail-${rowId}`}
+                              onClick={() => toggleScoreRow(rowId)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleScoreRow(rowId); } }}
+                            >
+                              Detaylı Skoru Göster
+                            </button>
+                          </td>
+                          <td className="level-cell">
+                            <div className="level-wrap">
+                              <span className="level-star" aria-hidden="true">⭐</span>
+                              <span className="level-text">{level.level}</span>
                             </div>
                           </td>
-                          <td className="level-cell"><span style={{ color: level.color }}>{level.icon} {level.level}</span></td>
-                          <td className="reason-cell">{match.reason || 'Sebep belirtilmemiş'}</td>
+                          <td className="reason-cell">
+                            <div className="reason-text">
+                              {match.reason || 'Sebep belirtilmemiş'}
+                            </div>
+                          </td>
                           <td className="actions-cell">
-                            <button className="btn-details-small" onClick={() => handleLawyerDetails(match.lawyerId)} disabled={!match.lawyerId}>Detay</button>
-                            <button className="primary-btn small" onClick={() => handleChoose(match)} disabled={!selectedCase || !match.lawyerId} style={{ marginLeft: 8 }}>Eşleştir</button>
+                            <button
+                              type="button"
+                              className="action-secondary-btn"
+                              onClick={() => handleLawyerDetails(match.lawyerId)}
+                              disabled={!match.lawyerId}
+                              aria-label="Aday detayını aç"
+                            >
+                              Detay
+                            </button>
+                            <button
+                              type="button"
+                              className="action-primary-btn"
+                              onClick={() => handleChoose(match)}
+                              disabled={!selectedCase || !match.lawyerId}
+                              aria-label="Bu avukat ile eşleştir"
+                            >
+                              Eşleştir
+                            </button>
                           </td>
                         </tr>
+                        {expandedScoreRow === rowId && (
+                          <tr key={rowId + '-detail'} className="score-detail-row">
+                            <td colSpan={6}>
+                              {(() => { const b = getScoreBreakdown(match); return (
+                                <div id={`score-detail-${rowId}`} className="score-detail-panel" role="region" aria-label="Detaylı Skor">
+                                  <div className="score-detail-item"><span className="label">Ana Skor</span><span className="value">{(b.baseScore * 100).toFixed(1)}%</span></div>
+                                  <div className="score-detail-item"><span className="label">Deneyim Bonusu</span><span className="value">+{(b.experienceBonus * 100).toFixed(1)}%</span></div>
+                                  <div className="score-detail-item"><span className="label">Dil Uyumu</span><span className="value">+{(b.languageBonus * 100).toFixed(1)}%</span></div>
+                                  <div className="score-detail-item"><span className="label">Şehir Uyumu</span><span className="value">+{(b.cityBonus * 100).toFixed(1)}%</span></div>
+                                  <div className="score-detail-divider" />
+                                  <div className="score-detail-item total"><span className="label">Toplam</span><span className="value">{(b.total * 100).toFixed(1)}%</span></div>
+                                </div>
+                              ); })()}
+                            </td>
+                          </tr>
+                        )}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-            )}
+            }
 
-            {showScoreBreakdown && (
-              <div className="score-breakdown-section">
-                <h3>📊 Detaylı Skor Analizi</h3>
-                <div className="breakdown-grid">
-                  {filteredAndSortedMatches.slice(0, 3).map((match, index) => {
-                    const s = readScore(match);
-                    const b = getScoreBreakdown({ ...match, score: s });
+            {/* Divider */}
+            <hr className="muted-divider" />
+
+            {/* Diğer Uygun Avukatlar */}
+            <div className="other-lawyers-note" role="status" aria-live="polite">
+              {loadingAvailableLawyers ? (
+                <span>Uygun avukatlar kontrol ediliyor...</span>
+              ) : otherLawyers.length > 0 ? (
+                <span>Diğer uygun avukatlar: <strong>{otherLawyers.length}</strong> kişi</span>
+              ) : (
+                <span>Diğer uygun avukat bulunamadı</span>
+              )}
+            </div>
+
+            {otherLawyers.length > 0 && (
+              <div className="available-lawyers-list">
+                <div className="lawyers-list-header">
+                  <h4>Diğer Uygun Avukatlar</h4>
+                  <span className="lawyers-count-badge">{otherLawyers.length}</span>
+                </div>
+                <div className="lawyers-grid">
+                  {otherLawyers.map((lawyer, index) => {
+                    const exp = yearsFrom(lawyer.startDate);
                     return (
-                      <div key={match.lawyerId || index} className="breakdown-card">
-                        <h4>#{index + 1} - {lawyerName(match.lawyerId)}</h4>
-                        <div className="breakdown-details">
-                          <div className="breakdown-item"><span>Ana Skor:</span><span>{(b.baseScore * 100).toFixed(1)}%</span></div>
-                          <div className="breakdown-item"><span>Deneyim Bonusu:</span><span className="positive">+{(b.experienceBonus * 100).toFixed(1)}%</span></div>
-                          <div className="breakdown-item"><span>Dil Uyumu:</span><span className="positive">+{(b.languageBonus * 100).toFixed(1)}%</span></div>
-                          <div className="breakdown-item"><span>Şehir Uyumu:</span><span className="positive">+{(b.cityBonus * 100).toFixed(1)}%</span></div>
-                          <div className="breakdown-item total"><span>Toplam:</span><span>{(b.total * 100).toFixed(1)}%</span></div>
+                      <div key={lawyer.id || index} className="lawyer-card-mini">
+                        <div className="lawyer-info">
+                          <div className="lawyer-name">{lawyer.fullName}</div>
+                          <div className="lawyer-details">
+                            <span className="lawyer-city">📍 {lawyer.city}</span>
+                            <span className="lawyer-experience">⚖️ {exp} yıl</span>
+                            {lawyer.title && <span className="pro-bono-badge">{lawyer.title}</span>}
+                          </div>
                         </div>
                       </div>
                     );
@@ -557,6 +522,8 @@ const MatchPage = () => {
                 </div>
               </div>
             )}
+
+            {/* Skor detay kartları kaldırıldı */}
           </div>
         )}
 
@@ -568,72 +535,11 @@ const MatchPage = () => {
           </div>
         )}
 
-        {selectedCase && matches.length === 0 && !loading && (
-          <div className="available-lawyers-preview">
-            <div className="available-lawyers-section">
-              <div className="available-lawyers-header">
-                <div className="lawyers-count">
-                  {loadingAvailableLawyers ? (
-                    <span className="loading-text">Uygun avukatlar kontrol ediliyor...</span>
-                  ) : availableLawyersCount > 0 ? (
-                    <span className="count-text"><strong>{availableLawyersCount}</strong> avukat bulundu</span>
-                  ) : (
-                    <span className="no-lawyers-text">Bu dava için kriterlere uyan avukat bulunamadı</span>
-                  )}
-                </div>
-                {availableLawyersCount > 0 && (
-                  <button className="toggle-lawyers-btn" onClick={() => setShowAvailableLawyers(!showAvailableLawyers)}>
-                    {showAvailableLawyers ? '🔼 Gizle' : '🔽 Göster'}
-                  </button>
-                )}
-              </div>
+        {/* Eski üst info/liste alanı tamamen kaldırıldı */}
 
-              {showAvailableLawyers && availableLawyersCount > 0 && (
-                <div className="available-lawyers-list">
-                  <div className="lawyers-list-header">
-                    <h4>Uygun Avukatlar</h4>
-                    <span className="lawyers-count-badge">{availableLawyersCount} avukat</span>
-                  </div>
-                  <div className="lawyers-grid">
-                    {availableLawyers.map((lawyer, index) => {
-                      const exp = yearsFrom(lawyer.startDate);
-                      return (
-                        <div key={lawyer.id || index} className="lawyer-card-mini">
-                          <div className="lawyer-info">
-                            <div className="lawyer-name">{lawyer.fullName}</div>
-                            <div className="lawyer-details">
-                              <span className="lawyer-city">📍 {lawyer.city}</span>
-                              <span className="lawyer-experience">⚖️ {exp} yıl</span>
-                              {lawyer.title && (<span className="pro-bono-badge">{lawyer.title}</span>)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* No fallback placeholder when there are no results */}
 
-        {selectedCase && matches.length === 0 && !loading && (
-          <div className="match-placeholder">
-            <div className="placeholder-icon">⚖️</div>
-            <h3>Eşleştirme Önerisi Yapılmadı</h3>
-            <p>Seçilen dava için eşleştirme önerisi almak üzere "Eşleştirme Önerileri Al" butonuna tıklayınız.</p>
-          </div>
-        )}
-
-        {loading && matches.length === 0 && (
-          <div className="loading-container">
-            <div className="loading-spinner">
-              <div className="spinner"></div>
-              <p>AI eşleştirme yapılıyor...</p>
-              <p className="loading-subtitle">Bu işlem birkaç saniye sürebilir</p>
-            </div>
-          </div>
-        )}
+        {/* Loader removed: no placeholder during matching */}
       </div>
 
       {/* ✅ Eşleştirme Tarihçesi */}

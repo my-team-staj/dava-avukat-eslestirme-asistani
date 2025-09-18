@@ -1,5 +1,6 @@
 // ui/src/components/LawyerList.jsx
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../App.css";
 import LawyerEditForm from "./LawyerEditForm";
@@ -59,6 +60,7 @@ function maskPhone(phone = "") {
 }
 
 function LawyerList() {
+  const navigate = useNavigate();
   const [lawyers, setLawyers] = useState([]);
   const [cities, setCities] = useState([]);
   const [expandedRows, setExpandedRows] = useState([]);
@@ -219,9 +221,27 @@ function LawyerList() {
 
   return (
     <div className="container">
-      <h2 style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        Avukat Listesi
-      </h2>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: 'var(--space-6)'
+      }}>
+        <h2 style={{ 
+          fontSize: 'var(--font-size-3xl)',
+          fontWeight: 'var(--font-weight-bold)',
+          color: 'var(--text-primary)',
+          margin: 0
+        }}>
+          Avukatlar
+        </h2>
+        <button
+          className="btn btn-primary-flat btn-compact"
+          onClick={() => navigate("/lawyer-add")}
+        >
+          Yeni Avukat Ekle
+        </button>
+      </div>
 
       {/* Filtre Barı */}
       <div className="filters">

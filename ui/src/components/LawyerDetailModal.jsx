@@ -57,9 +57,9 @@ const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
   return (
     <div className="modal-overlay lawyer-modal" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Avukat Detayları</h2>
-          <button className="close-button" onClick={onClose}>
+        <div className="modal-header modal-header--teal">
+          <h2 className="modal-title--white">Avukat Detayları</h2>
+          <button className="close-button close-button--white" onClick={onClose}>
             <FaTimes />
           </button>
         </div>
@@ -74,26 +74,26 @@ const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
             <div className="lawyer-header">
               <div className="lawyer-avatar"><FaUserTie /></div>
               <div className="lawyer-info">
-                <h3>{lawyer.fullName}</h3>
+                <h3 className="lawyer-name-strong">{lawyer.fullName}</h3>
                 <div className="lawyer-rating" style={{ gap: 8 }}>
-                  <span className={`badge ${lawyer.isActive ? 'badge-success' : 'badge-muted'}`}>
+                  <span className={`pill-badge ${lawyer.isActive ? 'pill-teal' : 'pill-muted'}`}>
                     {lawyer.isActive ? 'Aktif' : 'Pasif'}
                   </span>
-                  {lawyer.title && <span className="badge badge-info">{lawyer.title}</span>}
+                  {lawyer.title && <span className="pill-badge pill-outline">{lawyer.title}</span>}
                 </div>
               </div>
             </div>
 
             <div className="lawyer-stats">
-              <div className="stat-item">
-                <FaBriefcase className="stat-icon" />
+              <div className="stat-item stat-card">
+                <FaBriefcase className="stat-icon stat-icon--teal" />
                 <div>
                   <span className="stat-value">{expYears}</span>
                   <span className="stat-label">Yıl Deneyim</span>
                 </div>
               </div>
-              <div className="stat-item">
-                <FaCalendarAlt className="stat-icon" />
+              <div className="stat-item stat-card">
+                <FaCalendarAlt className="stat-icon stat-icon--teal" />
                 <div>
                   <span className="stat-value">{fmtDate(lawyer.startDate)}</span>
                   <span className="stat-label">Başlangıç</span>
@@ -102,28 +102,28 @@ const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
             </div>
 
             <div className="lawyer-details-grid">
-              <div className="detail-item">
-                <FaMapMarkerAlt className="detail-icon" />
+              <div className="detail-item detail-card">
+                <FaMapMarkerAlt className="detail-icon detail-icon--teal" />
                 <span><strong>Şehir:</strong> {lawyer.city || '-'}</span>
               </div>
 
-              <div className="detail-item">
-                <FaAt className="detail-icon" />
+              <div className="detail-item detail-card">
+                <FaAt className="detail-icon detail-icon--teal" />
                 <span><strong>E-posta:</strong> {lawyer.email || '-'}</span>
               </div>
 
-              <div className="detail-item">
-                <FaPhone className="detail-icon" />
+              <div className="detail-item detail-card">
+                <FaPhone className="detail-icon detail-icon--teal" />
                 <span><strong>Telefon:</strong> {lawyer.phone || '-'}</span>
               </div>
 
-              <div className="detail-item">
-                <FaLanguage className="detail-icon" />
+              <div className="detail-item detail-card">
+                <FaLanguage className="detail-icon detail-icon--teal" />
                 <span><strong>Diller:</strong> {languages.length ? languages.join(', ') : '-'}</span>
               </div>
 
-              <div className="detail-item">
-                <FaIdBadge className="detail-icon" />
+              <div className="detail-item detail-card">
+                <FaIdBadge className="detail-icon detail-icon--teal" />
                 <span><strong>Kayıt Tipi:</strong> {lawyer.prmEmployeeRecordType || '-'}</span>
               </div>
             </div>
@@ -136,7 +136,7 @@ const LawyerDetailModal = ({ lawyerId, isOpen, onClose }) => {
             )}
 
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={onClose}>Kapat</button>
+              <button className="action-secondary-btn" onClick={onClose}>Kapat</button>
             </div>
           </div>
         ) : (

@@ -24,10 +24,16 @@ function App() {
           <main className="app-main">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/lawyer-add" element={<LawyerAddForm />} />
+              {/* Yeni sade rotalar */}
               <Route path="/lawyers" element={<LawyerList />} />
-              <Route path="/case-add" element={<CreateCaseForm />} />
+              <Route path="/lawyer-add" element={<LawyerAddForm />} />
+
+              <Route path="/davalar" element={<CaseListPage />} />
+              <Route path="/davalar/yeni" element={<CreateCaseForm />} />
+
+              {/* Geri uyumluluk için eski rotaları koru */}
               <Route path="/cases" element={<CaseListPage />} />
+              <Route path="/case-add" element={<CreateCaseForm />} />
               <Route path="/match" element={<MatchPage />} />
             </Routes>
           </main>
