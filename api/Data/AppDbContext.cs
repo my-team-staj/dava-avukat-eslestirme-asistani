@@ -20,6 +20,25 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Case>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<CaseLawyerMatch>().HasQueryFilter(e => !e.IsDeleted);
 
+        // ---- RowVersion (optimistic concurrency) ----
+        modelBuilder.Entity<Case>()
+            .Property(c => c.RowVersion)
+            .IsRowVersion();
+
+        // ---- Case ↔ WorkingGroup (tek ilişkili, inverse net) ----
+        modelBuilder.Entity<Case>()
+            .HasOne(c => c.WorkingGroup)
+            .WithMany(g => g.Cases)                 // inverse navigation
+            .HasForeignKey(c => c.WorkingGroupId)   // nullable FK
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ---- Lawyer ↔ WorkingGroup (tek ilişkili, inverse net) ----
+        modelBuilder.Entity<Lawyer>()
+            .HasOne(l => l.WorkingGroup)
+            .WithMany(g => g.Lawyers)               // inverse navigation
+            .HasForeignKey(l => l.WorkingGroupId)   // nullable FK
+            .OnDelete(DeleteBehavior.SetNull);
+
         // --- WorkingGroup seed ---
         modelBuilder.Entity<WorkingGroup>().HasData(
             new WorkingGroup { Id = 1, GroupName = "PATENT", GroupDescription = "Patent işleri", CreatedAt = new DateTime(2025, 9, 10) },
@@ -31,7 +50,7 @@ public class AppDbContext : DbContext
             new WorkingGroup { Id = 7, GroupName = "TİCARİ DAVA", GroupDescription = "Ticari davalar", CreatedAt = new DateTime(2025, 9, 10) }
         );
 
-        // ---- Lawyer seed (örnek bir tane) ----
+        // ---- Lawyer seed (örnek) ----
         modelBuilder.Entity<Lawyer>().HasData(
             new Lawyer
             {

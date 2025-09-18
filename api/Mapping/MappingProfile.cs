@@ -12,7 +12,7 @@ namespace dava_avukat_eslestirme_asistani
             CreateMap<Lawyer, LawyerDto>()
                 .ForMember(dest => dest.WorkGroupId, opt => opt.MapFrom(src => src.WorkingGroupId))
                 .ForMember(dest => dest.WorkGroup, opt => opt.MapFrom(
-                    src => src.WorkingGroup != null ? src.WorkingGroup.GroupName : null  // << düzeltme: Name -> GroupName
+                    src => src.WorkingGroup != null ? src.WorkingGroup.GroupName : null
                 ));
 
             CreateMap<LawyerCreateDto, Lawyer>()
@@ -22,6 +22,7 @@ namespace dava_avukat_eslestirme_asistani
                 .ForMember(dest => dest.WorkingGroupId, opt => opt.MapFrom(src => src.WorkGroupId));
 
             // --- Case ---
+            // DTO’lardaki tüm alanlar birebir isimlendirildiği için ekstra ForMember gerekmez.
             CreateMap<CaseCreateDto, Case>();
             CreateMap<CaseUpdateDto, Case>();
             CreateMap<Case, CaseDto>();

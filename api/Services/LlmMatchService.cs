@@ -33,51 +33,101 @@ namespace dava_avukat_eslestirme_asistani.Services
             var model = modelOverride ?? (_cfg["OpenAI:Model"] ?? "gpt-4o-mini");
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-            // 2) Prompt (Türkçe, yeni title’lara göre)
+            // 2) Prompt helper
             string One(string? s) => (s ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
 
+            // --- Title skorları (paylaştığın tablo) ---
+            // LLM'e 'unvan' anlam eşleşmesi için referans olması amacıyla JSON halinde veriliyor.
+            var titleScoresJson = @"
+{
+  ""Professor"": 95,
+  ""Direktör"": 92,
+  ""Araştırma Direktörü"": 92,
+  ""OAD"": 92,
+  ""OAG"": 92,
+  ""Ünite Yöneticisi Asistan"": 92,
+
+  ""Counsel"": 88,
+  ""Kıdemli Vekil"": 88,
+  ""Kıdemli Araştırmacı"": 88,
+  ""Lider Araştırmacı"": 88,
+
+  ""Avukat"": 82,
+  ""Danışman Avukat"": 82,
+  ""Vekil"": 82,
+
+  ""Araştırmacı"": 75,
+  ""Araştırma"": 75,
+  ""Araştırma Asistanı"": 75,
+  ""OA4"": 75,
+  ""YA"": 75,
+
+  ""Asistan"": 68,
+  ""Tercüman"": 68,
+  ""Tescil Asistanı"": 68,
+
+  ""Tescil Asistanı Destek Sorumlusu"": 62,
+  ""Yardımcı Vekil"": 62,
+  ""OA3"": 62,
+
+  ""A3"": 58,
+  ""OA2"": 58,
+
+  ""A2"": 52,
+  ""OA1"": 52,
+
+  ""A1"": 48,
+  ""A0"": 45,
+
+  ""Stajyer Avukat"": 30,
+  ""TOBB Stajyeri"": 30,
+  ""Yaz Stajyeri"": 30,
+  ""Dönemsel Stajyer"": 30
+}";
+
+            // --- Sistem mesajı (WG puan kriteri olarak açık) ---
             var sys =
                 "Sen bir dava–avukat eşleştirme asistanısın.\n" +
                 "- SADECE verilen avukat listesinden seç; listede olmayanı yazma.\n" +
                 "- Zorunlu uyum: ŞEHİR (Case.City ≡ Lawyer.City). Uymayan adayı ele.\n" +
-                "- Değerlendirme sinyalleri (ağırlıklar):\n" +
-                "  • Deneyim yılı (0.50) – ExperienceYears.\n" +
-                "  • WorkGroup/Title uyumu (0.30) – Case açıklamasındaki anahtarlarla adayın WorkGroup/Title eşleşmesi.\n" +
-                "  • Metinsel açıklama uyumu (0.20) – Case.SubjectMatterDescription veya Description ile adayın Title/Education/Languages bilgileri arasındaki anlamlı ilişki.\n" +
-                "- Dil/Pro bono gibi alanlar verilmediyse zorunlu tutma.\n" +
+                "- Değerlendirme sinyalleri ve önerilen ağırlıklar:\n" +
+                "  • Deneyim yılı (0.50) – ExperienceYears / StartDate.\n" +
+                "  • WorkingGroup + Title uyumu (0.30) – Özellikle Case.WorkingGroupId ≡ Candidate.WorkGroupId ise güçlü bonus ver; ek olarak title_scores sözlüğü ile unvanı değerlendir.\n" +
+                "    * Title puanlaması için aşağıdaki skor sözlüğünü kullan (yakın eşleşmeyi de kabul et):\n" +
+                "      title_scores = " + titleScoresJson + "\n" +
+                "  • Metinsel açıklama uyumu (0.20) – Case.SubjectMatterDescription/Description ile aday Title/Education/Languages/RecordType ilişkisi.\n" +
+                "- Notlar: IsActive=false ise çok hafif eksi etki; Languages/Education/RecordType ek bağlamdır, zorunlu filtre değildir.\n" +
                 "- ÇIKIŞ ŞEMASI: {\"candidates\":[{\"lawyerId\":number,\"score\":number,\"reason\":string}]}\n" +
                 "- score: 0–1 arası gerçekçi; 1.00 verme, yuvarlak skorlardan kaçın.\n" +
-                "- reason: Türkçe, 1–2 kısa cümle (~200 karakter). Şehir uyumu + güçlü yanlar (deneyim/WG-Title/anahtar kelime) + küçük bir trade-off belirt.\n" +
+                "- reason: Türkçe, 1–2 kısa cümle (~200 karakter). Şehir uyumu + güçlü yan(lar) + küçük bir trade-off belirt.\n" +
                 "- Yalnızca geçerli JSON döndür; JSON dışına yazma.";
 
-            // Case özet bloğu
+            // --- CASE bloğu (WG bilgisi eklendi) ---
             var caseBlock = $@"
 # CASE
 id={caseSum.Id};
-contactClient={One(caseSum.ContactClient)};
 fileSubject={One(caseSum.FileSubject)};
-caseResponsible={One(caseSum.CaseResponsible)};
 natureOfAssignment={One(caseSum.PrmNatureOfAssignment)};
 placeOfUseSubject={One(caseSum.PrmCasePlaceofUseSubject)};
 subjectMatterDescription={One(caseSum.SubjectMatterDescription)};
 isToBeInvoiced={(caseSum.IsToBeInvoiced ? "true" : "false")};
 city={One(caseSum.City)};
 description={One(caseSum.Description)};
-country={One(caseSum.Country)};
-county={One(caseSum.County)};
-address={One(caseSum.Address)};
-attorney1={One(caseSum.Attorney1)};
-attorney2={One(caseSum.Attorney2)};
-attorney3={One(caseSum.Attorney3)};";
+workingGroupId={(caseSum.WorkingGroupId.HasValue ? caseSum.WorkingGroupId.Value.ToString() : "null")};
+workingGroupName={One(caseSum.WorkingGroupName)};";
 
-            // Adaylar bloğu (yeni LawyerCard alanları)
+            // --- CANDIDATES bloğu (privacy: ad/e-posta/telefon yok) ---
             var candsBlock = string.Join("\n", candidates.Select(c =>
-                $"- id={c.Id}; fullName={One(c.FullName)}; city={One(c.City)}; " +
-                $"expYears={c.ExperienceYears}; " +
-                $"langs=[{string.Join(",", (c.Languages ?? Array.Empty<string>()).Select(One))}]; " +
-                $"title={One(c.Title)}; education={One(c.Education)}; " +
-                $"workGroupId={c.WorkGroupId}; workGroup={One(c.WorkGroup)};"
-            ));
+            {
+                var start = c.StartDate.HasValue ? c.StartDate.Value.ToString("yyyy-MM-dd") : "null";
+                var langs = string.Join(",", (c.Languages ?? Array.Empty<string>()).Select(One));
+                return
+                    $"- id={c.Id}; city={One(c.City)}; " +
+                    $"expYears={c.ExperienceYears}; startDate={start}; " +
+                    $"isActive={(c.IsActive ? "true" : "false")}; " +
+                    $"langs=[{langs}]; title={One(c.Title)}; education={One(c.Education)}; " +
+                    $"recordType={One(c.PrmEmployeeRecordType)}; workGroupId={c.WorkGroupId}; workGroup={One(c.WorkGroup)};";
+            }));
 
             var user = $@"
 {caseBlock}
@@ -87,6 +137,8 @@ attorney3={One(caseSum.Attorney3)};";
 
 # INSTRUCTIONS
 - Zorunlu kural: CITY uyuşmalı. Uyuşmayan adayı ele.
+- WorkingGroup FİLTRE değildir; ancak Case.WorkingGroupId ≡ Candidate.WorkGroupId ise skorda belirgin BONUS uygula.
+- Title puanını title_scores sözlüğü ile değerlendir; metinsel uyumu da göz önünde bulundur.
 - Belirtilen ağırlıklara göre skoru hesapla; gereksiz eşitliklerden kaçın.
 - reasons Türkçe ve somut olsun; şehir uyumu + güçlü yanlar + küçük bir trade-off belirt.
 - En iyi {topK} adayı azalan skora göre döndür. Sadece geçerli JSON üret.
@@ -129,7 +181,7 @@ attorney3={One(caseSum.Attorney3)};";
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                 ?? new CompletionShape();
 
-            // 4) Sadece verilen adaylardan gelenleri al; LLM tekrarlarını önle
+            // 4) Sadece verilen adaylardan gelenleri al; tekrarları engelle
             var allowed = candidates.Select(c => c.Id).ToHashSet();
             var seen = new HashSet<int>();
             var raw = new List<MatchCandidate>();
