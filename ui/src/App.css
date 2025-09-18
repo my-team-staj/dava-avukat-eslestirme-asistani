@@ -3850,6 +3850,7 @@ h2 {
 /* -- Aramalı select ortak kap -- */
 .searchable-field {
   width: 100%;
+  position: relative; /* dropdown'u doğru konumlandır */
 }
 
 /* Tetik butonu */
@@ -3881,18 +3882,7 @@ h2 {
 
 /* Dropdown */
 .searchable-select-dropdown,
-.searchable-multi-dropdown {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 6px);
-  background: #fff;
-  border: 1px solid #d6dbe6;
-  border-radius: 10px;
-  overflow-y: auto;
-  box-shadow: 0 8px 28px rgba(16, 24, 40, 0.15);
-  z-index: 1200; /* <- form, footer, modal vs. üstünde */
-}
+.searchable-multi-dropdown { position:absolute; left:0; right:0; top:calc(100% + 6px); background:#fff; border:1px solid #E0E0E0; border-radius:10px; overflow-y:auto; box-shadow:0 8px 28px rgba(16,24,40,.15); z-index: 2000; }
 
 /* Arama girişi */
 .searchable-input-wrap {
@@ -3929,9 +3919,7 @@ h2 {
   cursor: pointer;
 }
 .searchable-option:hover,
-.searchable-option.active {
-  background: #f4f6fb;
-}
+.searchable-option.active { background: #F5F5F5; }
 .searchable-option.selected {
   background: #eef2ff;
 }

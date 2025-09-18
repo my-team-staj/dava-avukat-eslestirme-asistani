@@ -36,6 +36,10 @@ const MatchPage = () => {
   const [showAvailableLawyers, setShowAvailableLawyers] = useState(false);
   const [loadingAvailableLawyers, setLoadingAvailableLawyers] = useState(false);
   const [expandedScoreRow, setExpandedScoreRow] = useState(null);
+  // Searchable case select state
+  const [caseQuery, setCaseQuery] = useState("");
+  const [caseOpen, setCaseOpen] = useState(false);
+  const [caseActiveIndex, setCaseActiveIndex] = useState(-1);
 
   // ---- Skor yardımcıları ----
   const pickScore01 = (obj) => {
@@ -311,20 +315,89 @@ const MatchPage = () => {
       <div className="match-container">
         <div className="match-controls">
           <div className="control-group">
-            <label htmlFor="caseSelect">Dava Seçin:</label>
-            <select
-              id="caseSelect"
-              value={selectedCase ?? ''}
-              onChange={(e) => { const v = e.target.value; setSelectedCase(v ? Number(v) : null); }}
-              className="form-select"
+            <label htmlFor="caseSearch">Dava Seçin:</label>
+            <div
+              className="searchable-field"
+              role="combobox"
+              aria-expanded={caseOpen}
+              aria-owns="case-options"
+              aria-haspopup="listbox"
             >
-              <option value="">Dava seçin...</option>
-              {Array.isArray(cases) && cases.map((caseItem) => (
-                <option key={caseItem.id ?? caseItem.Id} value={caseItem.id ?? caseItem.Id}>
-                  {(caseItem.fileSubject ?? caseItem.FileSubject ?? "(Konusuz)")}{(caseItem.city ?? caseItem.City) ? ` - ${caseItem.city ?? caseItem.City}` : ""}
-                </option>
-              ))}
-            </select>
+              <input
+                id="caseSearch"
+                aria-label="Dava seç"
+                className="form-select"
+                type="text"
+                placeholder="Dava seçin..."
+                value={caseQuery}
+                onFocus={() => setCaseOpen(true)}
+                onChange={(e) => { setCaseQuery(e.target.value); setCaseOpen(true); setCaseActiveIndex(-1); }}
+                onKeyDown={(e) => {
+                  const opts = (cases || []).filter((c) => {
+                    const label = `${c.fileSubject ?? c.FileSubject ?? ''} ${c.city ?? c.City ?? ''}`.trim();
+                    return label.toLowerCase().includes(caseQuery.toLowerCase());
+                  });
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setCaseActiveIndex((prev) => Math.min(prev + 1, opts.length - 1));
+                    setCaseOpen(true);
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setCaseActiveIndex((prev) => Math.max(prev - 1, 0));
+                  } else if (e.key === 'Enter') {
+                    if (caseActiveIndex >= 0 && opts[caseActiveIndex]) {
+                      const item = opts[caseActiveIndex];
+                      const id = item.id ?? item.Id;
+                      const label = `${item.fileSubject ?? item.FileSubject ?? '(Konusuz)'}${(item.city ?? item.City) ? ` - ${item.city ?? item.City}` : ''}`;
+                      setSelectedCase(id);
+                      setCaseQuery(label);
+                      setCaseOpen(false);
+                    }
+                  } else if (e.key === 'Escape') {
+                    setCaseOpen(false);
+                  }
+                }}
+                onBlur={() => {
+                  // slight delay so click can register
+                  setTimeout(() => setCaseOpen(false), 120);
+                }}
+              />
+
+              {caseOpen && (
+                <ul id="case-options" role="listbox" className="searchable-select-dropdown" style={{ maxHeight: 260, overflowY: 'auto' }}>
+                  {(() => {
+                    const q = caseQuery.trim().toLowerCase();
+                    const list = (cases || []).filter((c) => {
+                      const label = `${c.fileSubject ?? c.FileSubject ?? ''} ${c.city ?? c.City ?? ''}`.trim().toLowerCase();
+                      return label.includes(q);
+                    });
+                    if (list.length === 0) {
+                      return (
+                        <li className="searchable-option" aria-disabled="true">Sonuç bulunamadı</li>
+                      );
+                    }
+                    return list.map((c, idx) => {
+                      const id = c.id ?? c.Id;
+                      const label = `${c.fileSubject ?? c.FileSubject ?? '(Konusuz)'}${(c.city ?? c.City) ? ` - ${c.city ?? c.City}` : ''}`;
+                      return (
+                        <li
+                          key={id}
+                          id={`case-opt-${id}`}
+                          role="option"
+                          aria-selected={idx === caseActiveIndex}
+                          className={`searchable-option${idx === caseActiveIndex ? ' active' : ''}`}
+                          onMouseEnter={() => setCaseActiveIndex(idx)}
+                          onMouseDown={(e) => { e.preventDefault(); }}
+                          onClick={() => { setSelectedCase(id); setCaseQuery(label); setCaseOpen(false); }}
+                        >
+                          {label}
+                        </li>
+                      );
+                    });
+                  })()}
+                </ul>
+              )}
+            </div>
           </div>
 
           <div className="control-group">
