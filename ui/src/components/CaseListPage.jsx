@@ -38,7 +38,6 @@ export default function CaseListPage() {
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
   const [cities, setCities] = useState([]);
-  const [expandedRows, setExpandedRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -97,10 +96,6 @@ export default function CaseListPage() {
   }
 
   const handlePageChange = (page) => setQuery((prev) => ({ ...prev, page }));
-  const toggleExpand = (id) =>
-    setExpandedRows((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
 
   // Dosya Konusu üzerinden sıralama
   const handleSortByFileSubject = () => {
@@ -116,6 +111,10 @@ export default function CaseListPage() {
 
   const handleEditClick = (caseId) => {
     navigate(`/davalar/${caseId}/duzenle`);
+  };
+
+  const handleDetailClick = (caseId) => {
+    navigate(`/davalar/${caseId}/detay`);
   };
 
   // Silme — onay modalı
@@ -225,7 +224,6 @@ export default function CaseListPage() {
               const contactClient = maskName(contactClientRaw); // 🔐 burada maskeleniyor
               const isToBeInvoiced = (c.isToBeInvoiced ?? c.IsToBeInvoiced) ? "Evet" : "Hayır";
 
-              const isOpen = expandedRows.includes(id);
 
               return (
                 <React.Fragment key={id}>
@@ -237,11 +235,10 @@ export default function CaseListPage() {
                     <td className="actions-cell">
                       <button
                         className="btn-details"
-                        onClick={() => toggleExpand(id)}
-                        aria-expanded={isOpen}
-                        aria-label={isOpen ? "Detayı kapat" : "Detay aç"}
+                        onClick={() => handleDetailClick(id)}
+                        aria-label="Dava detayını görüntüle"
                       >
-                        {isOpen ? "Detayı Kapat" : "Detay Aç"}
+                        Detay
                       </button>{" "}
                       <button
                         className="btn-update"
@@ -260,22 +257,6 @@ export default function CaseListPage() {
                     </td>
                   </tr>
 
-                  {isOpen && (
-                    <tr>
-                      <td colSpan={5}>
-                        <div style={{ background: "#f2f5fa", padding: 12, borderRadius: 10 }}>
-                          <strong>Açıklama:</strong>{" "}
-                          {c.description ?? c.Description ?? "-"} <br />
-                          <strong>Konu Açıklaması:</strong>{" "}
-                          {c.subjectMatterDescription ?? c.SubjectMatterDescription ?? "-"} <br />
-                          <strong>Adres:</strong>{" "}
-                          {(c.address ?? c.Address) || (c.county ?? c.County)
-                            ? `${c.address ?? c.Address ?? ""} ${c.county ?? c.County ?? ""}`.trim()
-                            : "-"}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
               );
             })}

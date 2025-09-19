@@ -1,5 +1,5 @@
 // ui/src/components/CaseFormTabs.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CaseForm, CaseFormTab, CaseFormErrors, AsyncSelectDataSource } from '../types/case';
 import AsyncSearchableSelect from './inputs/AsyncSearchableSelect.jsx';
@@ -8,6 +8,18 @@ import axios from 'axios';
 import '../App.css';
 
 const API_BASE = 'https://localhost:60227/api';
+
+// Türkiye'nin 81 ili (plaka koduna göre tam liste) ve TR sıralama
+const TURKISH_CITIES = [
+  'Adana','Adıyaman','Afyonkarahisar','Ağrı','Amasya','Ankara','Antalya','Artvin','Aydın','Balıkesir',
+  'Bilecik','Bingöl','Bitlis','Bolu','Burdur','Bursa','Çanakkale','Çankırı','Çorum','Denizli',
+  'Diyarbakır','Edirne','Elazığ','Erzincan','Erzurum','Eskişehir','Gaziantep','Giresun','Gümüşhane','Hakkâri',
+  'Hatay','Isparta','Mersin','İstanbul','İzmir','Kars','Kastamonu','Kayseri','Kırklareli','Kırşehir',
+  'Kocaeli','Konya','Kütahya','Malatya','Manisa','Kahramanmaraş','Mardin','Muğla','Muş','Nevşehir',
+  'Niğde','Ordu','Rize','Sakarya','Samsun','Siirt','Sinop','Sivas','Tekirdağ','Tokat',
+  'Trabzon','Tunceli','Şanlıurfa','Uşak','Van','Yozgat','Zonguldak','Aksaray','Bayburt','Karaman',
+  'Kırıkkale','Batman','Şırnak','Bartın','Ardahan','Iğdır','Yalova','Karabük','Kilis','Osmaniye','Düzce'
+].sort((a, b) => a.localeCompare(b, 'tr-TR'));
 
 // Data sources for async selects
 const DATA_SOURCES: Record<string, AsyncSelectDataSource> = {
@@ -20,6 +32,12 @@ const DATA_SOURCES: Record<string, AsyncSelectDataSource> = {
   employees: {
     endpoint: `${API_BASE}/employees`,
     searchParam: 'search',
+    labelField: 'fullName',
+    valueField: 'id'
+  },
+  lawyers: {
+    endpoint: `${API_BASE}/lawyers`,
+    searchParam: 'searchTerm',
     labelField: 'fullName',
     valueField: 'id'
   },
@@ -69,6 +87,112 @@ const TABS: { key: CaseFormTab; label: string }[] = [
   { key: 'mahkeme-yargi', label: 'MAHKEME / YARGI BİLGİLERİ' },
   { key: 'izleme-meta', label: 'İZLEME / META' }
 ];
+
+// Searchable City Select Component
+interface SearchableCitySelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  'aria-label'?: string;
+}
+
+function SearchableCitySelect({ 
+  value, 
+  onChange, 
+  placeholder = 'Şehir seçin...', 
+  required = false,
+  'aria-label': ariaLabel 
+}: SearchableCitySelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const selectRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredCities = TURKISH_CITIES.filter(city =>
+    city.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (city: string) => {
+    onChange(city);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  const handleToggle = () => {
+    const newOpen = !isOpen;
+    setIsOpen(newOpen);
+    if (newOpen) setTimeout(() => searchInputRef.current?.focus(), 0);
+    else setSearchTerm('');
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="async-select-root" ref={selectRef}>
+      <button
+        type="button"
+        className={`async-select-trigger ${isOpen ? 'open' : ''}`}
+        onClick={handleToggle}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={ariaLabel}
+        aria-required={required}
+      >
+        <span className={`async-select-value ${!value ? 'placeholder' : ''}`}>
+          {value || placeholder}
+        </span>
+        <span className="async-select-caret">▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="async-select-dropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '4px' }} role="listbox">
+          <div className="async-select-search">
+            <input
+              ref={searchInputRef}
+              type="text"
+              className="async-select-search-input"
+              placeholder="İl ara..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              aria-label="İl arama"
+            />
+          </div>
+          <div className="async-select-options">
+            {filteredCities.length === 0 && (
+              <div className="async-select-empty">Sonuç bulunamadı</div>
+            )}
+            {filteredCities.map((city) => (
+              <button
+                key={city}
+                type="button"
+                className={`async-select-option ${city === value ? 'selected' : ''}`}
+                onClick={() => handleSelect(city)}
+                role="option"
+                aria-selected={city === value}
+              >
+                {city}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface CaseFormTabsProps {
   mode: 'create' | 'edit';
@@ -428,16 +552,14 @@ function GeneralTab({ formData, errors, onChange }: TabProps) {
       <div className="form-grid">
         <div className={`form-field required`}>
           <label htmlFor="contactClient">Müvekkil</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.contacts}
-            value={formData.contactClientId}
-            onChange={(value, option) => {
-              onChange('contactClientId', value);
-              onChange('contactClient', option?.fullName || '');
-            }}
-            placeholder="Müvekkil seçin veya arayın..."
+          <input
+            type="text"
+            id="contactClient"
+            className="form-input"
+            value={formData.contactClient}
+            onChange={(e) => onChange('contactClient', e.target.value)}
+            placeholder="Müvekkil adı giriniz..."
             required
-            aria-label="Müvekkil seçin"
           />
           {errors.contactClient && <div className="form-error">{errors.contactClient}</div>}
         </div>
@@ -458,16 +580,14 @@ function GeneralTab({ formData, errors, onChange }: TabProps) {
 
         <div className={`form-field required`}>
           <label htmlFor="caseResponsible">Dava Sorumlusu</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.employees}
-            value={formData.organizationEmployeeId}
-            onChange={(value, option) => {
-              onChange('organizationEmployeeId', value);
-              onChange('caseResponsible', option?.fullName || '');
-            }}
-            placeholder="Sorumlu kişi seçin..."
+          <input
+            type="text"
+            id="caseResponsible"
+            className="form-input"
+            value={formData.caseResponsible}
+            onChange={(e) => onChange('caseResponsible', e.target.value)}
+            placeholder="Sorumlu avukat adı..."
             required
-            aria-label="Dava sorumlusu seçin"
           />
           {errors.caseResponsible && <div className="form-error">{errors.caseResponsible}</div>}
         </div>
@@ -480,35 +600,22 @@ function GeneralTab({ formData, errors, onChange }: TabProps) {
             value={formData.subjectMatterDescription}
             onChange={(e) => onChange('subjectMatterDescription', e.target.value)}
             placeholder="Dava konusu hakkında detaylı açıklama..."
-            rows={4}
+            rows={6}
             required
           />
           {errors.subjectMatterDescription && <div className="form-error">{errors.subjectMatterDescription}</div>}
         </div>
 
-        <div className="form-field">
-          <label>Faturalandırılacak mı?</label>
-          <div className="form-switch">
-            <input
-              type="checkbox"
-              id="isToBeInvoiced"
-              checked={formData.isToBeInvoiced}
-              onChange={(e) => onChange('isToBeInvoiced', e.target.checked)}
-            />
-            <span className="form-switch-label">Evet</span>
-          </div>
-        </div>
+       
 
         <div className={`form-field required`}>
           <label htmlFor="city">Şehir</label>
-          <input
-            type="text"
-            id="city"
-            className="form-input"
+          <SearchableCitySelect
             value={formData.city}
-            onChange={(e) => onChange('city', e.target.value)}
-            placeholder="Örn: İstanbul"
+            onChange={(value) => onChange('city', value)}
+            placeholder="Şehir seçin veya arayın..."
             required
+            aria-label="Şehir seçin"
           />
           {errors.city && <div className="form-error">{errors.city}</div>}
         </div>
@@ -536,6 +643,18 @@ function GeneralTab({ formData, errors, onChange }: TabProps) {
             placeholder="Örn: Türkiye"
           />
         </div>
+         <div className="form-field">
+          <label>Faturalandırılacak mı?</label>
+          <div className="form-switch">
+            <input
+              type="checkbox"
+              id="isToBeInvoiced"
+              checked={formData.isToBeInvoiced}
+              onChange={(e) => onChange('isToBeInvoiced', e.target.checked)}
+            />
+            <span className="form-switch-label">Evet</span>
+          </div>
+        </div>
 
         <div className="form-field form-grid-full">
           <label htmlFor="address">Adres</label>
@@ -557,7 +676,7 @@ function GeneralTab({ formData, errors, onChange }: TabProps) {
             value={formData.description}
             onChange={(e) => onChange('description', e.target.value)}
             placeholder="Dava ile ilgili genel açıklama..."
-            rows={4}
+            rows={6}
             required
           />
           {errors.description && <div className="form-error">{errors.description}</div>}
@@ -637,24 +756,27 @@ function TeamTab({ formData, errors, onChange }: TabProps) {
       <div className="form-grid">
         <div className="form-field">
           <label htmlFor="organizationEmployee">Organizasyon Çalışanı</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.employees}
-            value={formData.organizationEmployeeId}
-            onChange={(value) => onChange('organizationEmployeeId', value)}
-            placeholder="Çalışan seçin..."
-            aria-label="Organizasyon çalışanı seçin"
+          <input
+            type="text"
+            id="organizationEmployee"
+            className="form-input"
+            value={formData.organizationEmployeeId !== null && formData.organizationEmployeeId !== undefined ? String(formData.organizationEmployeeId) : ''}
+            onChange={(e) => {
+              const v = e.target.value;
+              const num = v.trim() === '' ? null : Number(v);
+              onChange('organizationEmployeeId', Number.isNaN(num) ? null : num);
+            }}
           />
         </div>
 
         <div className="form-field">
-          <label htmlFor="oaCasePartner">OA Dava Ortağı</label>
+          <label htmlFor="oaCasePartner">Dava Ortağı</label>
           <input
             type="text"
             id="oaCasePartner"
             className="form-input"
             value={formData.oaCasePartner || ''}
             onChange={(e) => onChange('oaCasePartner', e.target.value || null)}
-            placeholder="Dava ortağı adı"
           />
         </div>
 
@@ -666,7 +788,6 @@ function TeamTab({ formData, errors, onChange }: TabProps) {
             className="form-input"
             value={formData.supervisor || ''}
             onChange={(e) => onChange('supervisor', e.target.value || null)}
-            placeholder="Süpervizör adı"
           />
         </div>
 
@@ -730,29 +851,25 @@ function FileClassificationTab({ formData, errors, onChange }: TabProps) {
 
         <div className="form-field">
           <label htmlFor="prmStatus">Durum</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.statuses}
-            value={formData.prmStatusId}
-            onChange={(value, option) => {
-              onChange('prmStatusId', value);
-              onChange('prmStatus', option?.statusName || null);
-            }}
-            placeholder="Durum seçin..."
-            aria-label="Durum seçin"
+          <input
+            type="text"
+            id="prmStatus"
+            className="form-input"
+            value={formData.prmStatus || ''}
+            onChange={(e) => onChange('prmStatus', e.target.value || null)}
+            placeholder="Durum bilgisi..."
           />
         </div>
 
         <div className="form-field">
           <label htmlFor="prmPriority">Öncelik</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.priorities}
-            value={formData.prmPriorityId}
-            onChange={(value, option) => {
-              onChange('prmPriorityId', value);
-              onChange('prmPriority', option?.priorityName || null);
-            }}
-            placeholder="Öncelik seçin..."
-            aria-label="Öncelik seçin"
+          <input
+            type="text"
+            id="prmPriority"
+            className="form-input"
+            value={formData.prmPriority || ''}
+            onChange={(e) => onChange('prmPriority', e.target.value || null)}
+            placeholder="Öncelik bilgisi..."
           />
         </div>
 
@@ -769,15 +886,13 @@ function FileClassificationTab({ formData, errors, onChange }: TabProps) {
 
         <div className="form-field">
           <label htmlFor="fileType">Dosya Türü</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.fileTypes}
-            value={formData.fileTypeId}
-            onChange={(value, option) => {
-              onChange('fileTypeId', value);
-              onChange('fileType', option?.typeName || null);
-            }}
-            placeholder="Dosya türü seçin..."
-            aria-label="Dosya türü seçin"
+          <input
+            type="text"
+            id="fileType"
+            className="form-input"
+            value={formData.fileType || ''}
+            onChange={(e) => onChange('fileType', e.target.value || null)}
+            placeholder="Dosya türü..."
           />
         </div>
 
@@ -790,7 +905,7 @@ function FileClassificationTab({ formData, errors, onChange }: TabProps) {
               checked={formData.isOfficeFile || false}
               onChange={(e) => onChange('isOfficeFile', e.target.checked)}
             />
-            <span className="form-switch-label">Ofis Dosyası</span>
+            
           </div>
         </div>
 
@@ -803,7 +918,6 @@ function FileClassificationTab({ formData, errors, onChange }: TabProps) {
               checked={formData.isPrivateFile || false}
               onChange={(e) => onChange('isPrivateFile', e.target.checked)}
             />
-            <span className="form-switch-label">Özel Dosya</span>
           </div>
         </div>
 
@@ -816,7 +930,6 @@ function FileClassificationTab({ formData, errors, onChange }: TabProps) {
               checked={formData.isProposalFile || false}
               onChange={(e) => onChange('isProposalFile', e.target.checked)}
             />
-            <span className="form-switch-label">Teklif Dosyası</span>
           </div>
         </div>
 
@@ -895,26 +1008,23 @@ function BillingTab({ formData, errors, onChange }: TabProps) {
       <div className="form-grid">
         <div className="form-field">
           <label htmlFor="tariffType">Tarife Türü</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.tariffTypes}
-            value={formData.tariffTypeId}
-            onChange={(value, option) => {
-              onChange('tariffTypeId', value);
-              onChange('tariffType', option?.tariffName || null);
-            }}
-            placeholder="Tarife türü seçin..."
-            aria-label="Tarife türü seçin"
+          <input
+            type="text"
+            id="tariffType"
+            className="form-input"
+            value={formData.tariffType || ''}
+            onChange={(e) => onChange('tariffType', e.target.value || null)}
           />
         </div>
 
         <div className="form-field">
           <label htmlFor="financeContactAccount">Finans İletişim Hesabı</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.contacts}
-            value={formData.financeContactAccountId}
-            onChange={(value) => onChange('financeContactAccountId', value)}
-            placeholder="Finans hesabı seçin..."
-            aria-label="Finans hesabı seçin"
+          <input
+            type="text"
+            id="financeContactAccount"
+            className="form-input"
+            value={formData.financeContactAccountId ? String(formData.financeContactAccountId) : ''}
+            onChange={(e) => onChange('financeContactAccountId', e.target.value ? Number(e.target.value) : null)}
           />
         </div>
 
@@ -926,7 +1036,6 @@ function BillingTab({ formData, errors, onChange }: TabProps) {
             className="form-input"
             value={formData.hardCopyLocation || ''}
             onChange={(e) => onChange('hardCopyLocation', e.target.value || null)}
-            placeholder="Fiziki dosya konumu"
           />
         </div>
 
@@ -964,13 +1073,14 @@ function CourtTab({ formData, errors, onChange }: TabProps) {
         </div>
 
         <div className="form-field">
-          <label htmlFor="contactCourtHouse">Mahkeme Binası</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.courts}
-            value={formData.contactCourtHouseId}
-            onChange={(value) => onChange('contactCourtHouseId', value)}
-            placeholder="Mahkeme binası seçin..."
-            aria-label="Mahkeme binası seçin"
+          <label htmlFor="courtAuthorityReferenceNo">Mahkeme Binası</label>
+          <input
+            type="text"
+            id="courtAuthorityReferenceNo"
+            className="form-input"
+            value={formData.courtAuthorityReferenceNo || ''}
+            onChange={(e) => onChange('courtAuthorityReferenceNo', e.target.value || null)}
+            placeholder="Mahkeme binası adı"
           />
         </div>
 
@@ -988,12 +1098,13 @@ function CourtTab({ formData, errors, onChange }: TabProps) {
 
         <div className="form-field">
           <label htmlFor="contactLocationCourt">Konum Mahkemesi</label>
-          <AsyncSearchableSelect
-            dataSource={DATA_SOURCES.courts}
-            value={formData.contactLocationCourtId}
-            onChange={(value) => onChange('contactLocationCourtId', value)}
-            placeholder="Konum mahkemesi seçin..."
-            aria-label="Konum mahkemesi seçin"
+          <input
+            type="text"
+            id="contactLocationCourt"
+            className="form-input"
+            value={formData.contactLocationCourt || ''}
+            onChange={(e) => onChange('contactLocationCourt', e.target.value || null)}
+            placeholder="Konum mahkemesi adı"
           />
         </div>
       </div>
@@ -1074,7 +1185,7 @@ function TrackingTab({ formData, errors, onChange, mode }: TabProps) {
             value={formData.note || ''}
             onChange={(e) => onChange('note', e.target.value || null)}
             placeholder="Ek notlar..."
-            rows={4}
+            rows={6}
           />
         </div>
       </div>

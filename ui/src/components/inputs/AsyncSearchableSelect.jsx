@@ -220,6 +220,8 @@ export default function AsyncSearchableSelect({
                 value={searchTerm}
                 onChange={handleSearchChange}
                 onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 aria-label="Arama"
               />
             </div>
