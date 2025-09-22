@@ -87,7 +87,7 @@ function LawyerAddForm() {
 
     try {
       await axios.post("https://localhost:60227/api/lawyers", payload);
-      toast.success("✅ Avukat başarıyla eklendi!");
+      toast.success("Avukat başarıyla eklendi!");
       setForm({
         fullName: "",
         isActive: true,
@@ -104,7 +104,7 @@ function LawyerAddForm() {
       setTimeout(() => navigate("/lawyers"), 800);
     } catch (err) {
       console.error(err);
-      toast.error("❌ Kayıt sırasında hata oluştu.");
+      toast.error("Kayıt sırasında hata oluştu.");
     }
   };
 

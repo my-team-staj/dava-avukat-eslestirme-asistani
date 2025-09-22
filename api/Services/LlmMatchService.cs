@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using dava_avukat_eslestirme_asistani.DTOs.Match;
 using Microsoft.Extensions.Configuration;
 
@@ -36,8 +37,7 @@ namespace dava_avukat_eslestirme_asistani.Services
             // 2) Prompt helper
             string One(string? s) => (s ?? string.Empty).Replace("\r", " ").Replace("\n", " ").Trim();
 
-            // --- Title skorları (paylaştığın tablo) ---
-            // LLM'e 'unvan' anlam eşleşmesi için referans olması amacıyla JSON halinde veriliyor.
+            // --- Title skorları ---
             var titleScoresJson = @"
 {
   ""Professor"": 95,
@@ -85,24 +85,22 @@ namespace dava_avukat_eslestirme_asistani.Services
   ""Dönemsel Stajyer"": 30
 }";
 
-            // --- Sistem mesajı (WG puan kriteri olarak açık) ---
+            // --- Sistem mesajı ---
             var sys =
                 "Sen bir dava–avukat eşleştirme asistanısın.\n" +
                 "- SADECE verilen avukat listesinden seç; listede olmayanı yazma.\n" +
                 "- Zorunlu uyum: ŞEHİR (Case.City ≡ Lawyer.City). Uymayan adayı ele.\n" +
                 "- Değerlendirme sinyalleri ve önerilen ağırlıklar:\n" +
-                "  • Deneyim yılı (0.50) – ExperienceYears / StartDate.\n" +
-                "  • WorkingGroup + Title uyumu (0.30) – Özellikle Case.WorkingGroupId ≡ Candidate.WorkGroupId ise güçlü bonus ver; ek olarak title_scores sözlüğü ile unvanı değerlendir.\n" +
-                "    * Title puanlaması için aşağıdaki skor sözlüğünü kullan (yakın eşleşmeyi de kabul et):\n" +
-                "      title_scores = " + titleScoresJson + "\n" +
-                "  • Metinsel açıklama uyumu (0.20) – Case.SubjectMatterDescription/Description ile aday Title/Education/Languages/RecordType ilişkisi.\n" +
-                "- Notlar: IsActive=false ise çok hafif eksi etki; Languages/Education/RecordType ek bağlamdır, zorunlu filtre değildir.\n" +
+                "  • Deneyim yılı (0.50)\n" +
+                "  • WorkingGroup + Title uyumu (0.30) – WG eşleşmesi bonus; unvanı title_scores ile değerlendir.\n" +
+                "  • Metinsel açıklama uyumu (0.20)\n" +
+                "- Notlar: IsActive=false hafif eksi etki; Languages/Education/RecordType ek bağlamdır.\n" +
                 "- ÇIKIŞ ŞEMASI: {\"candidates\":[{\"lawyerId\":number,\"score\":number,\"reason\":string}]}\n" +
-                "- score: 0–1 arası gerçekçi; 1.00 verme, yuvarlak skorlardan kaçın.\n" +
-                "- reason: Türkçe, 1–2 kısa cümle (~200 karakter). Şehir uyumu + güçlü yan(lar) + küçük bir trade-off belirt.\n" +
+                "- score: 0–1 arası; 1.00 verme, yuvarlak skorlardan kaçın.\n" +
+                "- reason: Kurumsal ve kısa (1–2 cümle, ~200 karakter). Şehir uyumu ve güçlü taraf(lar) net yazılsın; 'ama/ancak/fakat/lakin/yalnız' kelimeleri kesinlikle kullanılmasın.\n" +
                 "- Yalnızca geçerli JSON döndür; JSON dışına yazma.";
 
-            // --- CASE bloğu (WG bilgisi eklendi) ---
+            // --- CASE bloğu ---
             var caseBlock = $@"
 # CASE
 id={caseSum.Id};
@@ -116,7 +114,7 @@ description={One(caseSum.Description)};
 workingGroupId={(caseSum.WorkingGroupId.HasValue ? caseSum.WorkingGroupId.Value.ToString() : "null")};
 workingGroupName={One(caseSum.WorkingGroupName)};";
 
-            // --- CANDIDATES bloğu (privacy: ad/e-posta/telefon yok) ---
+            // --- CANDIDATES bloğu ---
             var candsBlock = string.Join("\n", candidates.Select(c =>
             {
                 var start = c.StartDate.HasValue ? c.StartDate.Value.ToString("yyyy-MM-dd") : "null";
@@ -137,12 +135,10 @@ workingGroupName={One(caseSum.WorkingGroupName)};";
 
 # INSTRUCTIONS
 - Zorunlu kural: CITY uyuşmalı. Uyuşmayan adayı ele.
-- WorkingGroup FİLTRE değildir; ancak Case.WorkingGroupId ≡ Candidate.WorkGroupId ise skorda belirgin BONUS uygula.
-- Title puanını title_scores sözlüğü ile değerlendir; metinsel uyumu da göz önünde bulundur.
-- Belirtilen ağırlıklara göre skoru hesapla; gereksiz eşitliklerden kaçın.
-- reasons Türkçe ve somut olsun; şehir uyumu + güçlü yanlar + küçük bir trade-off belirt.
-- En iyi {topK} adayı azalan skora göre döndür. Sadece geçerli JSON üret.
-";
+- WorkingGroup filtre değil; eşleşirse skora bonus uygula.
+- Title puanını title_scores ile değerlendir.
+- reasons: Kurumsal, pozitif, 1–2 cümle; şehir uyumu + güçlü yan(lar). 'ama/ancak/fakat/lakin/yalnız' kelimeleri kesinlikle yasak.
+- En iyi {topK} adayı JSON üret.";
 
             // 3) Chat Completions (JSON-only)
             var body = new
@@ -190,13 +186,13 @@ workingGroupName={One(caseSum.WorkingGroupName)};";
                 if (!allowed.Contains(x.LawyerId)) continue;
                 if (seen.Add(x.LawyerId))
                 {
-                    var reason = (x.Reason ?? string.Empty).Trim();
+                    var reason = CleanReason(x.Reason ?? string.Empty);
                     raw.Add(new MatchCandidate(x.LawyerId, Clamp01(x.Score), reason));
                 }
             }
             if (raw.Count == 0) return new List<MatchCandidate>();
 
-            // 5) Kalibrasyon (monotonik; 1.00 yok; yuvarlakları kırar)
+            // 5) Kalibrasyon
             var calibrated = raw
                 .Select(x =>
                 {
@@ -204,7 +200,7 @@ workingGroupName={One(caseSum.WorkingGroupName)};";
                     var s = Clamp(baseScore + Jitter(caseSum.Id, x.LawyerId), 0.0, 0.96);
                     s = Math.Round(s, 2);
 
-                    var reason = x.Reason ?? string.Empty;
+                    var reason = CleanReason(x.Reason ?? string.Empty);
                     if (reason.Length > 220) reason = reason.Substring(0, 220);
 
                     return new MatchCandidate(x.LawyerId, s, reason);
@@ -238,6 +234,42 @@ workingGroupName={One(caseSum.WorkingGroupName)};";
                 return (r - 0.5) * 0.02; // -0.01 .. +0.01
             }
         }
+
+        /// <summary>
+        /// Yasaklı bağlaçları (ama/ancak/fakat/lakin/yalnız + 'amcak' typo) metnin her yerinden söker,
+        /// artıkları toparlar, son noktayı garanti eder. Gerekirse kısa bir fallback bırakır.
+        /// </summary>
+        private static string CleanReason(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+            // normalize whitespace
+            var s = Regex.Replace(input, @"\s+", " ").Trim();
+
+            // yasaklı kelimeler: ama, amcak (typo), ancak, fakat, lakin, yalnız
+            var bannedWords = new[] { "ama", "amcak", "ancak", "fakat", "lakin", "yalnız" };
+
+            foreach (var word in bannedWords)
+            {
+                // kelime sınırlarıyla birlikte sil
+                s = Regex.Replace(s, $@"\b{word}\b[,:]?", "", RegexOptions.IgnoreCase);
+            }
+
+            // tekrar boşluk/noktalama toparla
+            s = Regex.Replace(s, @"\s+,", ",");
+            s = Regex.Replace(s, @"\s*\.\s*", ". ");
+            s = Regex.Replace(s, @"\s+", " ").Trim();
+
+            // cümle sonuna nokta yoksa ekle
+            if (!string.IsNullOrEmpty(s) && !".!?…".Contains(s[^1]))
+                s += ".";
+
+            // uzunluk kısıtı
+            if (s.Length > 220) s = s.Substring(0, 220).TrimEnd('.', ' ') + "…";
+
+            return s;
+        }
+
 
         private sealed class CompletionShape
         {

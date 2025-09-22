@@ -53,7 +53,7 @@ const MatchConfirmationModal = ({
         score: Number((lawyerData.score || 0).toFixed(2)),
       };
       await postChooseSafe(payload);
-      toast.success(`✅ Eşleştirme kaydedildi: ${lawyerData.name} (${payload.score})`);
+      toast.success(`Eşleştirme kaydedildi: ${lawyerData.name} (${payload.score})`);
       onSuccess?.(payload);
       setTimeout(() => {
         setIsProcessing(false);
@@ -61,7 +61,7 @@ const MatchConfirmationModal = ({
       }, 500);
     } catch (error) {
       console.error('Eşleştirme hatası:', error);
-      toast.error('❌ Eşleştirme kaydedilemedi. Lütfen tekrar deneyin.');
+      toast.error('Eşleştirme kaydedilemedi. Lütfen tekrar deneyin.');
       setIsProcessing(false);
     }
   };

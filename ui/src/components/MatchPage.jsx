@@ -408,8 +408,19 @@ const MatchPage = () => {
                 <option value={5}>5 Avukat</option>
                 <option value={10}>10 Avukat</option>
               </select>
-              <button onClick={handleMatch} disabled={!selectedCase || loading} className="match-button">
-                {loading ? 'Eşleştirme Önerileri Yapılıyor' : 'Avukat Önerileri Al'}
+              <button 
+                onClick={handleMatch} 
+                disabled={!selectedCase || loading} 
+                className={`match-button ${loading ? 'loading' : ''}`}
+              >
+                {loading ? (
+                  <>
+                    <div className="loading-spinner-small"></div>
+                    Öneriler Hazırlanıyor...
+                  </>
+                ) : (
+                  'Avukat Önerileri Al'
+                )}
               </button>
             </div>
           </div>
@@ -562,30 +573,30 @@ const MatchPage = () => {
             
 
             {otherLawyers.length > 0 && (
-              <div className="available-lawyers-list">
-                <div className="lawyers-list-header">
+                <div className="available-lawyers-list">
+                  <div className="lawyers-list-header">
                   <h4>Diğer Uygun Avukatlar</h4>
                   <span className="lawyers-count-badge">{otherLawyers.length}</span>
-                </div>
-                <div className="lawyers-grid">
+                  </div>
+                  <div className="lawyers-grid">
                   {otherLawyers.map((lawyer, index) => {
-                    const exp = yearsFrom(lawyer.startDate);
-                    return (
-                      <div key={lawyer.id || index} className="lawyer-card-mini">
-                        <div className="lawyer-info">
-                          <div className="lawyer-name">{lawyer.fullName}</div>
-                          <div className="lawyer-details">
-                            <span className="lawyer-city">📍 {lawyer.city}</span>
-                            <span className="lawyer-experience">⚖️ {exp} yıl</span>
+                      const exp = yearsFrom(lawyer.startDate);
+                      return (
+                        <div key={lawyer.id || index} className="lawyer-card-mini">
+                          <div className="lawyer-info">
+                            <div className="lawyer-name">{lawyer.fullName}</div>
+                            <div className="lawyer-details">
+                              <span className="lawyer-city">📍 {lawyer.city}</span>
+                              <span className="lawyer-experience">⚖️ {exp} yıl</span>
                             {lawyer.title && <span className="pro-bono-badge">{lawyer.title}</span>}
                           </div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Skor detay kartları kaldırıldı */}
           </div>
