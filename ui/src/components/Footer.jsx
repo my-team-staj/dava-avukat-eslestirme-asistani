@@ -10,7 +10,7 @@ function Footer() {
     }}>
       <div className="footer-main">
         <div className="footer-section">
-          <h4>LegXpert</h4>
+          <h4>lexpert</h4>
           <p>Yapay zeka destekli akıllı dava-avukat eşleştirme platformu</p>
         </div>
         
@@ -28,7 +28,7 @@ function Footer() {
           <h4>İletişim</h4>
           <div className="contact-item">
             <FaEnvelope style={{ marginRight: 8, color: 'white' }} />
-            <a href="mailto:info@legxpert.com" style={{color: 'white'}}>info@legxpert.com</a>
+            <a href="mailto:info@lexpert.com" style={{color: 'white'}}>info@lexpert.com</a>
           </div>
           <div className="contact-item">
             <FaPhone style={{ marginRight: 8, color: 'white' }} />
@@ -48,7 +48,7 @@ function Footer() {
       
       <div className="footer-bottom">
         <small>
-          &copy; {new Date().getFullYear()} LegXpert — Akıllı Hukuk Platformu
+          &copy; {new Date().getFullYear()} lexpert — Akıllı Hukuk Platformu
         </small>
       </div>
     </footer>

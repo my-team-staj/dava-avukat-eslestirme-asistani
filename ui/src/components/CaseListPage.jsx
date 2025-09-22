@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../App.css";
 import { toast } from "react-toastify";
-import CaseUpdateModal from "./CaseUpdateModal";
 import ConfirmDialog from "./ConfirmDialog";
 
 const API_BASE = "https://localhost:60227/api";
@@ -39,7 +38,6 @@ export default function CaseListPage() {
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
   const [cities, setCities] = useState([]);
-  const [expandedRows, setExpandedRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -54,8 +52,6 @@ export default function CaseListPage() {
   });
   const [searchInput, setSearchInput] = useState("");
 
-  const [selectedCase, setSelectedCase] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Silme için modal state
   const [confirm, setConfirm] = useState({ open: false, id: null });
@@ -100,10 +96,6 @@ export default function CaseListPage() {
   }
 
   const handlePageChange = (page) => setQuery((prev) => ({ ...prev, page }));
-  const toggleExpand = (id) =>
-    setExpandedRows((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
 
   // Dosya Konusu üzerinden sıralama
   const handleSortByFileSubject = () => {
@@ -117,14 +109,12 @@ export default function CaseListPage() {
     });
   };
 
-  const handleEditClick = async (caseId) => {
-    try {
-      const res = await axios.get(`${API_BASE}/cases/${caseId}`);
-      setSelectedCase(res.data);
-      setIsModalOpen(true);
-    } catch (error) {
-      console.error("Dava bilgisi alınamadı:", error);
-    }
+  const handleEditClick = (caseId) => {
+    navigate(`/davalar/${caseId}/duzenle`);
+  };
+
+  const handleDetailClick = (caseId) => {
+    navigate(`/davalar/${caseId}/detay`);
   };
 
   // Silme — onay modalı
@@ -234,7 +224,6 @@ export default function CaseListPage() {
               const contactClient = maskName(contactClientRaw); // 🔐 burada maskeleniyor
               const isToBeInvoiced = (c.isToBeInvoiced ?? c.IsToBeInvoiced) ? "Evet" : "Hayır";
 
-              const isOpen = expandedRows.includes(id);
 
               return (
                 <React.Fragment key={id}>
@@ -246,11 +235,10 @@ export default function CaseListPage() {
                     <td className="actions-cell">
                       <button
                         className="btn-details"
-                        onClick={() => toggleExpand(id)}
-                        aria-expanded={isOpen}
-                        aria-label={isOpen ? "Detayı kapat" : "Detay aç"}
+                        onClick={() => handleDetailClick(id)}
+                        aria-label="Dava detayını görüntüle"
                       >
-                        {isOpen ? "Detayı Kapat" : "Detay Aç"}
+                        Detay
                       </button>{" "}
                       <button
                         className="btn-update"
@@ -269,22 +257,6 @@ export default function CaseListPage() {
                     </td>
                   </tr>
 
-                  {isOpen && (
-                    <tr>
-                      <td colSpan={5}>
-                        <div style={{ background: "#f2f5fa", padding: 12, borderRadius: 10 }}>
-                          <strong>Açıklama:</strong>{" "}
-                          {c.description ?? c.Description ?? "-"} <br />
-                          <strong>Konu Açıklaması:</strong>{" "}
-                          {c.subjectMatterDescription ?? c.SubjectMatterDescription ?? "-"} <br />
-                          <strong>Adres:</strong>{" "}
-                          {(c.address ?? c.Address) || (c.county ?? c.County)
-                            ? `${c.address ?? c.Address ?? ""} ${c.county ?? c.County ?? ""}`.trim()
-                            : "-"}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
               );
             })}
@@ -305,14 +277,6 @@ export default function CaseListPage() {
         ))}
       </div>
 
-      {/* Güncelleme Modalı */}
-      {isModalOpen && (
-        <CaseUpdateModal
-          caseData={selectedCase}
-          onClose={() => setIsModalOpen(false)}
-          onUpdated={fetchCases}
-        />
-      )}
 
       {/* Silme Onayı Modalı */}
       <ConfirmDialog

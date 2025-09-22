@@ -43,11 +43,37 @@ export default function SearchableSelect({
     };
   }, [open]);
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!open) return;
+    
+    const handleClickOutside = (event) => {
+      if (boxRef.current && !boxRef.current.contains(event.target)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
   const choose = (val) => {
+    console.log('SearchableSelect choose called with:', val);
     onChange?.(val);
     setOpen(false);
     setQuery("");
   };
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (open) {
+      const searchInput = document.querySelector('.select-search input');
+      if (searchInput) {
+        setTimeout(() => searchInput.focus(), 0);
+      }
+    }
+  }, [open]);
 
   return (
     <div className="select-root" ref={boxRef}>
@@ -82,6 +108,8 @@ export default function SearchableSelect({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Ara…"
                 onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
               />
             </div>
 

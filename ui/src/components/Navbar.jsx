@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FaBalanceScale, FaUserTie, FaList, FaPlus, FaHandshake } from "react-icons/fa";
-import logo from "../assets/logo.png";
+// Logo dosyası opsiyonel; dosya yoksa sadece metin gösterilecek
 import "../App.css";
 
 function Navbar() {
@@ -11,7 +11,7 @@ function Navbar() {
   return (
     <nav className="navbar-new">
       <Link to="/" className="navbar-logo-new">
-        <span className="navbar-brand-text">LegXpert</span>
+        <img src="/lexpert-logo.svg" alt="lexpert" className="navbar-logo-img" />
       </Link>
       <div className="navbar-links-new">
         <Link to="/davalar" className={isActive("/davalar")}>

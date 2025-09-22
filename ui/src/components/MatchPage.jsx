@@ -559,16 +559,7 @@ const MatchPage = () => {
             {/* Divider */}
             <hr className="muted-divider" />
 
-            {/* Diğer Uygun Avukatlar */}
-            <div className="other-lawyers-note" role="status" aria-live="polite">
-              {loadingAvailableLawyers ? (
-                <span>Uygun avukatlar kontrol ediliyor...</span>
-              ) : otherLawyers.length > 0 ? (
-                <span>Diğer uygun avukatlar: <strong>{otherLawyers.length}</strong> kişi</span>
-              ) : (
-                <span>Diğer uygun avukat bulunamadı</span>
-              )}
-            </div>
+            
 
             {otherLawyers.length > 0 && (
               <div className="available-lawyers-list">
@@ -600,13 +591,6 @@ const MatchPage = () => {
           </div>
         )}
 
-        {!selectedCase && (
-          <div className="match-placeholder">
-            <div className="placeholder-icon">🔍</div>
-            <h3>Eşleştirme Başlatın</h3>
-            <p>Yukarıdan bir dava seçin ve eşleştirme işlemini başlatın</p>
-          </div>
-        )}
 
         {/* Eski üst info/liste alanı tamamen kaldırıldı */}
 
