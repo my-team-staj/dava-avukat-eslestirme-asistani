@@ -59,6 +59,7 @@ export default function SearchableSelect({
   }, [open]);
 
   const choose = (val) => {
+    console.log('SearchableSelect choose called with:', val);
     onChange?.(val);
     setOpen(false);
     setQuery("");
