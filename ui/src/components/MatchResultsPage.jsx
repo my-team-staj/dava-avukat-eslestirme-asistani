@@ -320,7 +320,10 @@ function MatchResultsPage() {
       <div className="container">
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Eşleştirme sonuçları yükleniyor...</p>
+          <p>Avukat önerileri hazırlanıyor...</p>
+          <small style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            En uygun avukatları buluyoruz, lütfen bekleyin.
+          </small>
         </div>
       </div>
     );

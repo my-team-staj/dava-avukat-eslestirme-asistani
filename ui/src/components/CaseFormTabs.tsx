@@ -409,16 +409,16 @@ export default function CaseFormTabs({ mode, caseId }: CaseFormTabsProps) {
       
       if (mode === 'create') {
         await axios.post(`${API_BASE}/cases`, payload);
-        toast.success('✅ Dava başarıyla oluşturuldu!');
+        toast.success('Dava başarıyla oluşturuldu!');
         navigate('/davalar');
       } else {
         await axios.put(`${API_BASE}/cases/${caseId}`, payload);
-        toast.success('✅ Dava başarıyla güncellendi!');
+        toast.success('Dava başarıyla güncellendi!');
         navigate('/davalar');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast.error('❌ Kayıt sırasında bir hata oluştu.');
+      toast.error('Kayıt sırasında bir hata oluştu.');
     } finally {
       setSubmitting(false);
     }

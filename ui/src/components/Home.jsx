@@ -137,12 +137,19 @@ function Home() {
             </div>
 
             <button
-              className="primary-cta-btn"
+              className={`primary-cta-btn ${loading ? 'loading' : ''}`}
               onClick={handleGetSuggestions}
               disabled={loading || !selectedCase}
               aria-label="Avukat Bul"
             >
-              {loading ? 'Eşleştirme Yapılıyor...' : 'Avukat Bul'}
+              {loading ? (
+                <>
+                  <div className="loading-spinner-toast"></div>
+                  Avukat Önerileri Hazırlanıyor...
+                </>
+              ) : (
+                'Avukat Bul'
+              )}
             </button>
           </div>
       </section>

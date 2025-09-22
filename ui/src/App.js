@@ -49,13 +49,13 @@ function App() {
 
           {/* Toastify Container - Ortada Göster */}
          <ToastContainer
+  position="top-right"
   autoClose={3000}
   theme="colored"
   hideProgressBar
   closeOnClick
   pauseOnHover
   draggable
-  containerClassName="toast-center-screen"
 />
 
 
