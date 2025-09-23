@@ -1,3 +1,4 @@
+// MatchPage.jsx
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import LawyerDetailModal from './LawyerDetailModal';
@@ -33,13 +34,8 @@ const MatchPage = () => {
   const [history, setHistory] = useState([]);
   const [availableLawyers, setAvailableLawyers] = useState([]);
   const [availableLawyersCount, setAvailableLawyersCount] = useState(0);
-  const [showAvailableLawyers, setShowAvailableLawyers] = useState(false);
   const [loadingAvailableLawyers, setLoadingAvailableLawyers] = useState(false);
   const [expandedScoreRow, setExpandedScoreRow] = useState(null);
-  // Searchable case select state
-  const [caseQuery, setCaseQuery] = useState("");
-  const [caseOpen, setCaseOpen] = useState(false);
-  const [caseActiveIndex, setCaseActiveIndex] = useState(-1);
 
   // ---- Skor yardımcıları ----
   const pickScore01 = (obj) => {
@@ -292,13 +288,10 @@ const MatchPage = () => {
     setExpandedScoreRow(prev => (prev === rowId ? null : rowId));
   };
 
-  // "Sebep" metni artık tam gösteriliyor; aç/kapa mantığı kaldırıldı
-
   // Seçilen dava bilgileri
   const sel = selectedCase ? cases.find(c => (c.id ?? c.Id) === selectedCase) : null;
   const fileSubject = sel?.fileSubject ?? sel?.FileSubject ?? "";
   const city = sel?.city ?? sel?.City ?? "";
-  // const caseResponsible = sel?.caseResponsible ?? sel?.CaseResponsible ?? "";  // ❌ KARTTA KULLANMIYORUZ
   const contactClient = sel?.contactClient ?? sel?.ContactClient ?? "";
   const isToBeInvoiced = (sel?.isToBeInvoiced ?? sel?.IsToBeInvoiced) ? "Evet" : "Hayır";
   const description = sel?.description ?? sel?.Description ?? "";
@@ -314,90 +307,30 @@ const MatchPage = () => {
 
       <div className="match-container">
         <div className="match-controls">
+          {/* 🔄 Home.jsx ile aynı mantıkta basit select */}
           <div className="control-group">
-            <label htmlFor="caseSearch">Dava Seçin:</label>
-            <div
-              className="searchable-field"
-              role="combobox"
-              aria-expanded={caseOpen}
-              aria-owns="case-options"
-              aria-haspopup="listbox"
+            <label htmlFor="caseSelect">Dava Seçin:</label>
+            <select
+              id="caseSelect"
+              value={selectedCase ?? ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  setSelectedCase(null);
+                } else {
+                  // MatchPage içinde id karşılaştırmaları === kullandığı için number saklıyoruz
+                  setSelectedCase(Number(val));
+                }
+              }}
+              className="form-select"
             >
-              <input
-                id="caseSearch"
-                aria-label="Dava seç"
-                className="form-select"
-                type="text"
-                placeholder="Dava seçin..."
-                value={caseQuery}
-                onFocus={() => setCaseOpen(true)}
-                onChange={(e) => { setCaseQuery(e.target.value); setCaseOpen(true); setCaseActiveIndex(-1); }}
-                onKeyDown={(e) => {
-                  const opts = (cases || []).filter((c) => {
-                    const label = `${c.fileSubject ?? c.FileSubject ?? ''} ${c.city ?? c.City ?? ''}`.trim();
-                    return label.toLowerCase().includes(caseQuery.toLowerCase());
-                  });
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    setCaseActiveIndex((prev) => Math.min(prev + 1, opts.length - 1));
-                    setCaseOpen(true);
-                  } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    setCaseActiveIndex((prev) => Math.max(prev - 1, 0));
-                  } else if (e.key === 'Enter') {
-                    if (caseActiveIndex >= 0 && opts[caseActiveIndex]) {
-                      const item = opts[caseActiveIndex];
-                      const id = item.id ?? item.Id;
-                      const label = `${item.fileSubject ?? item.FileSubject ?? '(Konusuz)'}${(item.city ?? item.City) ? ` - ${item.city ?? item.City}` : ''}`;
-                      setSelectedCase(id);
-                      setCaseQuery(label);
-                      setCaseOpen(false);
-                    }
-                  } else if (e.key === 'Escape') {
-                    setCaseOpen(false);
-                  }
-                }}
-                onBlur={() => {
-                  // slight delay so click can register
-                  setTimeout(() => setCaseOpen(false), 120);
-                }}
-              />
-
-              {caseOpen && (
-                <ul id="case-options" role="listbox" className="searchable-select-dropdown" style={{ maxHeight: 260, overflowY: 'auto' }}>
-                  {(() => {
-                    const q = caseQuery.trim().toLowerCase();
-                    const list = (cases || []).filter((c) => {
-                      const label = `${c.fileSubject ?? c.FileSubject ?? ''} ${c.city ?? c.City ?? ''}`.trim().toLowerCase();
-                      return label.includes(q);
-                    });
-                    if (list.length === 0) {
-                      return (
-                        <li className="searchable-option" aria-disabled="true">Sonuç bulunamadı</li>
-                      );
-                    }
-                    return list.map((c, idx) => {
-                      const id = c.id ?? c.Id;
-                      const label = `${c.fileSubject ?? c.FileSubject ?? '(Konusuz)'}${(c.city ?? c.City) ? ` - ${c.city ?? c.City}` : ''}`;
-                      return (
-                        <li
-                          key={id}
-                          id={`case-opt-${id}`}
-                          role="option"
-                          aria-selected={idx === caseActiveIndex}
-                          className={`searchable-option${idx === caseActiveIndex ? ' active' : ''}`}
-                          onMouseEnter={() => setCaseActiveIndex(idx)}
-                          onMouseDown={(e) => { e.preventDefault(); }}
-                          onClick={() => { setSelectedCase(id); setCaseQuery(label); setCaseOpen(false); }}
-                        >
-                          {label}
-                        </li>
-                      );
-                    });
-                  })()}
-                </ul>
-              )}
-            </div>
+              <option value="">Dava seçin...</option>
+              {cases.map((caseItem) => (
+                <option key={caseItem.id ?? caseItem.Id} value={caseItem.id ?? caseItem.Id}>
+                  {caseItem.fileSubject || caseItem.FileSubject || `Dava #${caseItem.id ?? caseItem.Id}`}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="control-group">
@@ -436,17 +369,12 @@ const MatchPage = () => {
               <div className="case-details">
                 <div className="case-detail-item"><strong>Dosya Konusu:</strong> {fileSubject}</div>
                 <div className="case-detail-item"><strong>Şehir:</strong> {city}</div>
-                {/* ❌ “Sorumlu” alanı istenmediği için kaldırıldı */}
                 <div className="case-detail-item"><strong>Müvekkil:</strong> {contactClient || "-"}</div>
                 <div className="case-detail-item"><strong>Faturalandırılacak mı?</strong> {isToBeInvoiced}</div>
               </div>
             </div>
 
-            {/* — Sonuçlardan sonra bilgi notu gösterilecek; listelenen avukatlar yukarıda */}
-
-            {/* Sonuç Kontrolleri Kaldırıldı (Sırala & Skor Detayı Göster) */}
-
-            {/* İstatistikler / Kart / Tablo */}
+            {/* İstatistikler */}
             <div className="match-stats">
               <div className="stat-item"><span className="stat-label">Toplam Sonuç:</span><span className="stat-value">{filteredAndSortedMatches.length}</span></div>
               <div className="stat-item"><span className="stat-label">Ortalama Skor:</span>
@@ -472,30 +400,27 @@ const MatchPage = () => {
               </div>
             </div>
 
-            {/* Kart görünümü tamamen kaldırıldı */}
-
-            {
-              <div className="matches-table-container">
-                <table className="matches-table">
-                  <colgroup>
-                    <col style={{ width: '56px' }} />
-                    <col style={{ width: '220px' }} />
-                    <col style={{ width: '220px' }} />
-                    <col style={{ width: '80px' }} />
-                    <col />
-                    <col style={{ width: '220px' }} />
-                  </colgroup>
-                  <thead>
-                    <tr><th>Sıra</th><th>Avukat</th><th>Skor</th><th>Seviye</th><th>Sebep</th><th>İşlemler</th></tr>
-                  </thead>
-                  <tbody>
-                    {filteredAndSortedMatches.map((match, index) => {
-                      const s = readScore(match);
-                      const level = getScoreLevel(s);
-                      const rowId = match.lawyerId || index;
-                      return (
-                        <React.Fragment>
-                        <tr key={rowId + '-row'}>
+            <div className="matches-table-container">
+              <table className="matches-table">
+                <colgroup>
+                  <col style={{ width: '56px' }} />
+                  <col style={{ width: '220px' }} />
+                  <col style={{ width: '220px' }} />
+                  <col style={{ width: '80px' }} />
+                  <col />
+                  <col style={{ width: '220px' }} />
+                </colgroup>
+                <thead>
+                  <tr><th>Sıra</th><th>Avukat</th><th>Skor</th><th>Seviye</th><th>Sebep</th><th>İşlemler</th></tr>
+                </thead>
+                <tbody>
+                  {filteredAndSortedMatches.map((match, index) => {
+                    const s = readScore(match);
+                    const level = getScoreLevel(s);
+                    const rowId = match.lawyerId || index;
+                    return (
+                      <React.Fragment key={rowId}>
+                        <tr>
                           <td className="rank-cell">#{index + 1}</td>
                           <td className="lawyer-id-cell">{lawyerName(match.lawyerId)}</td>
                           <td className="score-cell">
@@ -544,7 +469,7 @@ const MatchPage = () => {
                           </td>
                         </tr>
                         {expandedScoreRow === rowId && (
-                          <tr key={rowId + '-detail'} className="score-detail-row">
+                          <tr className="score-detail-row">
                             <td colSpan={6}>
                               {(() => { const b = getScoreBreakdown(match); return (
                                 <div id={`score-detail-${rowId}`} className="score-detail-panel" role="region" aria-label="Detaylı Skor">
@@ -559,55 +484,44 @@ const MatchPage = () => {
                             </td>
                           </tr>
                         )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            }
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
             {/* Divider */}
             <hr className="muted-divider" />
 
-            
-
             {otherLawyers.length > 0 && (
-                <div className="available-lawyers-list">
-                  <div className="lawyers-list-header">
+              <div className="available-lawyers-list">
+                <div className="lawyers-list-header">
                   <h4>Diğer Uygun Avukatlar</h4>
                   <span className="lawyers-count-badge">{otherLawyers.length}</span>
-                  </div>
-                  <div className="lawyers-grid">
+                </div>
+                <div className="lawyers-grid">
                   {otherLawyers.map((lawyer, index) => {
-                      const exp = yearsFrom(lawyer.startDate);
-                      return (
-                        <div key={lawyer.id || index} className="lawyer-card-mini">
-                          <div className="lawyer-info">
-                            <div className="lawyer-name">{lawyer.fullName}</div>
-                            <div className="lawyer-details">
-                              <span className="lawyer-city">📍 {lawyer.city}</span>
-                              <span className="lawyer-experience">⚖️ {exp} yıl</span>
+                    const exp = yearsFrom(lawyer.startDate);
+                    return (
+                      <div key={lawyer.id || index} className="lawyer-card-mini">
+                        <div className="lawyer-info">
+                          <div className="lawyer-name">{lawyer.fullName}</div>
+                          <div className="lawyer-details">
+                            <span className="lawyer-city">📍 {lawyer.city}</span>
+                            <span className="lawyer-experience">⚖️ {exp} yıl</span>
                             {lawyer.title && <span className="pro-bono-badge">{lawyer.title}</span>}
                           </div>
-                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-
-            {/* Skor detay kartları kaldırıldı */}
+              </div>
+            )}
           </div>
         )}
 
-
-        {/* Eski üst info/liste alanı tamamen kaldırıldı */}
-
-        {/* No fallback placeholder when there are no results */}
-
-        {/* Loader removed: no placeholder during matching */}
       </div>
 
       {/* ✅ Eşleştirme Tarihçesi */}
@@ -640,7 +554,6 @@ const MatchPage = () => {
           id: sel.id ?? sel.Id,
           fileSubject,
           city,
-          // caseResponsible alanı burada kalabilir; modalda kullanılmak istenirse backend kaydı için gerekli olabilir
           caseResponsible: sel?.caseResponsible ?? sel?.CaseResponsible ?? "",
           contactClient,
           isToBeInvoiced: (sel?.isToBeInvoiced ?? sel?.IsToBeInvoiced) === true,
